@@ -37,9 +37,12 @@ env/
 
 # Data files (keep structure, ignore large files)
 data/*.json
-!data/localization_data.json
 data/*.npy
 data/*.mat
+
+# Large data files (exceeds GitHub's 100MB limit)
+data/localization_data.json
+data/synthetic_motion_data_large.json
 
 # Localization dataset folder (large .mat files)
 data_wifii/
