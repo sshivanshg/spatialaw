@@ -5,7 +5,6 @@ Data Transforms for CSI and WiFi Data
 import torch
 import numpy as np
 from typing import Dict, Optional
-import torchvision.transforms as transforms
 
 
 class CSITransforms:
