@@ -209,19 +209,19 @@ features = processor.extract_features(csi_data[0])
 ### Train Model
 
 ```python
-from src.models.baseline_model import BaselineSpatialModel
+from src.models.spatial_model import SpatialModel, ModelSize
 from src.preprocessing.data_loader import CSIDataset
 from src.training.trainer import Trainer
 from torch.utils.data import DataLoader
 
-# Create model
-model = BaselineSpatialModel(
+# Create model (unified model with configurable size)
+model = SpatialModel(
     input_channels=2,
     num_subcarriers=64,
     num_antennas=3,
-    latent_dim=128,
     output_channels=3,
-    output_size=(64, 64)
+    output_size=(64, 64),
+    model_size=ModelSize.SMALL  # Use SMALL, MEDIUM, or LARGE
 )
 
 # Create dataset

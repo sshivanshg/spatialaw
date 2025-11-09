@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 # Add parent directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from src.models.baseline_model import BaselineSpatialModel
+from src.models.spatial_model import SpatialModel, ModelSize
 from src.preprocessing.data_loader import CSIDataset
 from src.training.trainer import Trainer
 from src.training.losses import CombinedLoss
@@ -56,13 +56,13 @@ def main():
     
     # Create model
     print("2. Creating baseline model...")
-    model = BaselineSpatialModel(
+    model = SpatialModel(
         input_channels=2,
         num_subcarriers=64,
         num_antennas=3,
-        latent_dim=128,
         output_channels=3,
-        output_size=(64, 64)
+        output_size=(64, 64),
+        model_size=ModelSize.SMALL  # Baseline model = small size
     ).to(device)
     
     total_params = sum(p.numel() for p in model.parameters())

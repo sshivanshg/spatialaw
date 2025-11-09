@@ -29,7 +29,7 @@ def test_imports():
         return False
     
     try:
-        from src.models.baseline_model import BaselineSpatialModel
+        from src.models.spatial_model import SpatialModel, ModelSize
         print("✓ Baseline model imported")
     except ImportError as e:
         print(f"✗ Baseline model import failed: {e}")
@@ -79,18 +79,18 @@ def test_model_creation():
     
     try:
         import torch
-        from src.models.baseline_model import BaselineSpatialModel
+        from src.models.spatial_model import SpatialModel, ModelSize
         
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print(f"Using device: {device}")
         
-        model = BaselineSpatialModel(
+        model = SpatialModel(
             input_channels=2,
             num_subcarriers=64,
             num_antennas=3,
-            latent_dim=128,
             output_channels=3,
-            output_size=(64, 64)
+            output_size=(64, 64),
+            model_size=ModelSize.SMALL  # Baseline model = small size
         ).to(device)
         
         # Test forward pass
