@@ -20,10 +20,10 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual environments
+# Virtual Environment
 venv/
-env/
 ENV/
+env/
 
 # IDE
 .vscode/
@@ -32,33 +32,38 @@ ENV/
 *.swo
 *~
 
-# Data
-data/raw/
-data/processed/
-*.pkl
-*.h5
-*.hdf5
+# Jupyter Notebook
+.ipynb_checkpoints
 
-# Models
-models/checkpoints/
-*.pth
-*.pt
-*.ckpt
+# Data files (keep structure, ignore large files)
+data/*.json
+data/*.npy
+data/*.mat
 
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb_checkpoints
+# Large data files (exceeds GitHub's 100MB limit)
+data/localization_data.json
+data/synthetic_motion_data_large.json
+
+# Localization dataset folder (large .mat files)
+data_wifii/
+
+# Checkpoints (keep structure, ignore model files)
+checkpoints/*.pkl
+checkpoints/*.pth
+checkpoints/*.json
 
 # Logs
 logs/
 *.log
-tensorboard/
+
+# Visualizations
+visualizations/*.png
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Environment
-.env
-.env.local
-
+# Temporary files
+*.tmp
+*.bak
+*.swp
