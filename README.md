@@ -1,31 +1,32 @@
-# Spatial Awareness through Ambient Wireless Signals
+# Spatial Awareness through Ambient Wireless Signals - Motion Detection
 
 Project by Rishabh (230178) and Shivansh (230054) - Newton School of Technology
 
 ## Overview
 
-This project creates WiFi signal heatmaps for indoor environments by collecting WiFi data from multiple positions within a room and training a model to predict signal distribution across the space.
+WiFi-based motion detection system that classifies movement vs no movement from WiFi signal time-series data. The system uses real-time RSSI, SNR, and signal strength measurements to detect human motion in indoor environments.
 
 ## Project Structure
 
 ```
 spatialaw/
-├── collect_with_position.py    # WiFi data collection with position tracking
-├── data/                        # Dataset storage
-├── scripts/                     # Utility scripts
-│   ├── train_heatmap.py        # Train heatmap model
-│   ├── generate_heatmap.py     # Generate heatmap visualization
-│   ├── combine_multi_device_data.py  # Combine data from multiple devices
-│   └── validate_collected_data.py    # Validate collected data
-├── src/                         # Source code
-│   ├── data_collection/        # WiFi data collection utilities
-│   ├── preprocessing/          # Data preprocessing pipelines
-│   ├── models/                 # Model definitions (heatmap models)
-│   └── training/               # Training utilities
-├── configs/                     # Configuration files
-├── checkpoints/                 # Model checkpoints
-├── logs/                        # Training logs
-└── visualizations/              # Visualization outputs
+├── scripts/
+│   ├── collect_time_series_data.py      # Collect time-series data for motion detection
+│   ├── train_motion_detector.py         # Train motion detection models
+│   ├── visualize_motion_detection.py    # Visualize motion detection results
+│   ├── generate_synthetic_motion_data.py # Generate synthetic motion data
+│   ├── live_prediction.py               # Live motion detection
+│   └── check_trained_models.py          # Check which models are trained
+├── src/
+│   ├── data_collection/          # WiFi data collection utilities
+│   │   └── wifi_collector.py     # WiFi data collector for macOS
+│   ├── preprocessing/            # Data preprocessing pipelines
+│   │   └── time_series_features.py  # Time-series feature extraction
+│   └── models/                   # Model definitions
+│       └── motion_detector.py    # Motion detection models
+├── data/                         # Dataset storage
+├── visualizations/               # Visualization outputs
+└── checkpoints/                  # Model checkpoints
 ```
 
 ## Quick Start
@@ -33,239 +34,247 @@ spatialaw/
 ### 1. Setup
 
 ```bash
-# Create virtual environment and install dependencies
-./setup.sh
-
-# Or manually:
+# Create virtual environment
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Collect Data with Positions
-
-**Interactive Mode** (Recommended):
-```bash
-python collect_with_position.py --location Room_101 --interactive --duration 30
-```
-
-This will prompt you to enter positions:
-```
-Enter position (x, y) or 'q' to quit: 0, 0
-Enter position (x, y) or 'q' to quit: 2.5, 0
-Enter position (x, y) or 'q' to quit: 5, 0
-Enter position (x, y) or 'q' to quit: q
-```
-
-**Single Position Mode**:
-```bash
-python collect_with_position.py --location Room_101 --x 2.5 --y 3.0 --duration 30
-```
-
-**Coordinate System Setup**:
-- Choose a corner of the room as origin (0, 0)
-- Measure room dimensions (meters)
-- Use consistent units
-- Plan collection points in a grid pattern (1-2 meters apart)
-
-### 3. Train Heatmap Model
+### 2. Collect Motion Data
 
 ```bash
-python scripts/train_heatmap.py \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --predict_signal \
-    --num_epochs 100 \
-    --batch_size 32
+# Interactive mode (recommended)
+python scripts/collect_time_series_data.py \
+    --location room1 \
+    --interactive \
+    --duration 60 \
+    --sampling_rate 10
+
+# Collect with movement label
+python scripts/collect_time_series_data.py \
+    --location room1 \
+    --movement \
+    --duration 60 \
+    --sampling_rate 10
+
+# Collect without movement label
+python scripts/collect_time_series_data.py \
+    --location room1 \
+    --no_movement \
+    --duration 60 \
+    --sampling_rate 10
 ```
 
-### 4. Generate Heatmap
+### 3. Train Motion Detector
 
 ```bash
-python scripts/generate_heatmap.py \
-    --model_path checkpoints/signal_heatmap_model.pth \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --feature 0 \
-    --feature_name "RSSI" \
-    --show_points \
-    --output visualizations/room_101_heatmap.png
+# Train on collected data
+python scripts/train_motion_detector.py \
+    --data_paths data/room1/time_series/*.json \
+    --model_type random_forest \
+    --window_size 20 \
+    --output_dir checkpoints
 ```
 
-## Data Collection
-
-### Setup Coordinates
-
-1. **Choose origin**: Pick a corner of the room as (0, 0)
-2. **Measure room**: Note dimensions (e.g., 5m × 4m)
-3. **Plan points**: Create a grid of collection points (1-2m apart)
-4. **Collect data**: Stay at each position for 30-60 seconds
-
-### Collection Tips
-
-- Collect from at least 10-20 different positions
-- Space positions evenly across the room
-- Keep device stationary during collection
-- Cover entire room area
-- Use consistent coordinate system
-
-### Example Room Layout
-
-```
-Room (5m × 4m):
-(0,4) ──────────── (5,4)
-  │                 │
-  │      Room       │
-  │                 │
-(0,0) ──────────── (5,0)
-```
-
-**Collection points** (1m grid):
-- (0,0), (1,0), (2,0), (3,0), (4,0), (5,0)
-- (0,1), (1,1), (2,1), (3,1), (4,1), (5,1)
-- ... and so on
-
-## Model Training
-
-### Signal Prediction (Position → Signal)
-
-Predict WiFi signal features from position coordinates:
-- **Input**: (x, y) coordinates
-- **Output**: WiFi signal features (RSSI, SNR, signal_strength, channel)
-- **Use case**: WiFi coverage mapping
+### 4. Run Live Prediction
 
 ```bash
-python scripts/train_heatmap.py \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --predict_signal \
-    --num_epochs 100
+# Real-time motion detection
+python scripts/live_prediction.py
 ```
 
-### Position Prediction (Signal → Position)
+## Motion Detection
 
-Predict position from WiFi signal features:
-- **Input**: WiFi signal features
-- **Output**: (x, y) coordinates
-- **Use case**: Indoor positioning
+### Overview
+
+**Task**: Classify movement vs no movement from WiFi time-series data  
+**Input**: WiFi signal time series (RSSI, SNR, signal strength over time)  
+**Output**: Binary classification (movement / no movement) with confidence score  
+**Features**: 9 statistical features extracted from 20-sample windows:
+- Mean, std, variance of RSSI, SNR, signal strength
+- Range (max - min) of RSSI
+- Mean absolute change of RSSI
+
+**Models**: Random Forest (default), Logistic Regression, SVM
+
+### How It Works
+
+1. **Data Collection**: Collects real-time WiFi signals (RSSI, SNR, signal strength) at 10 Hz sampling rate
+2. **Feature Extraction**: Extracts statistical features from sliding windows (20 samples = 2 seconds)
+3. **Model Training**: Trains Random Forest classifier on labeled data (movement vs no movement)
+4. **Prediction**: Classifies new samples and outputs confidence scores
+
+### Data Collection
 
 ```bash
-python scripts/train_heatmap.py \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --predict_position \
-    --num_epochs 100
+# Interactive mode (asks for movement label)
+python scripts/collect_time_series_data.py \
+    --location room1 \
+    --interactive \
+    --duration 60 \
+    --sampling_rate 10
+
+# Collect with movement label
+python scripts/collect_time_series_data.py \
+    --location room1 \
+    --movement \
+    --duration 60
+
+# Collect without movement label
+python scripts/collect_time_series_data.py \
+    --location room1 \
+    --no_movement \
+    --duration 60
 ```
 
-## Heatmap Generation
+**Parameters:**
+- `--location`: Location name (e.g., "room1", "office")
+- `--interactive`: Interactive mode (asks for movement label)
+- `--movement`: Label data as "movement"
+- `--no_movement`: Label data as "no movement"
+- `--duration`: Collection duration in seconds (default: 60)
+- `--sampling_rate`: Sampling rate in Hz (default: 10.0)
 
-Generate heatmap visualization of WiFi signal distribution:
+### Training
 
 ```bash
-python scripts/generate_heatmap.py \
-    --model_path checkpoints/signal_heatmap_model.pth \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --feature 0 \
-    --feature_name "RSSI" \
-    --show_points
+# Train on collected data
+python scripts/train_motion_detector.py \
+    --data_paths data/room1/time_series/*.json \
+    --model_type random_forest \
+    --window_size 20 \
+    --output_dir checkpoints
+
+# Model types: random_forest, logistic, svm
+# Window size: Number of samples per window (default: 20)
 ```
 
-**Features to visualize**:
-- `--feature 0`: RSSI (signal strength in dBm)
-- `--feature 1`: Signal strength (0-100 scale)
-- `--feature 2`: SNR (Signal-to-Noise Ratio)
-- `--feature 3`: Channel
+**Output:**
+- `checkpoints/motion_detector_*.pkl`: Trained model
+- `checkpoints/motion_detector_*_scaler.pkl`: Feature scaler
+- `checkpoints/motion_detector_*_metrics.json`: Performance metrics
 
-## Data Validation
-
-Validate collected data:
+### Live Prediction
 
 ```bash
-python scripts/validate_collected_data.py data/Room_101/
+# Real-time motion detection
+python scripts/live_prediction.py
 ```
 
-## Combine Data from Multiple Devices
+**Output:**
+- Real-time predictions every 0.1 seconds (10 Hz)
+- Confidence scores for each prediction
+- RSSI and SNR values
 
-If collecting from multiple devices:
+### Visualization
 
 ```bash
-python scripts/combine_multi_device_data.py --data_dir data/Room_101
+# Generate time-series plot with motion regions
+python scripts/visualize_motion_detection.py \
+    --data_path data/room1/time_series/room1_movement_*.json \
+    --model_path checkpoints/motion_detector_random_forest.pkl \
+    --scaler_path checkpoints/motion_detector_random_forest_scaler.pkl \
+    --output visualizations/motion_detection_timeseries.png
+```
+
+**Outputs:**
+- **Confusion Matrix**: `visualizations/motion_detection_confusion_matrix.png`
+- **ROC Curve**: `visualizations/motion_detection_roc_curve.png`
+- **Time-Series Plot**: `visualizations/motion_detection_timeseries.png` (with motion regions highlighted)
+- **Metrics**: `checkpoints/motion_detector_*_metrics.json` (accuracy, precision, recall, F1, ROC AUC)
+
+### Model Performance
+
+Typical performance metrics:
+- **Accuracy**: 70-90% (depending on data quality and environment)
+- **Precision**: 0.7-0.9
+- **Recall**: 0.6-0.9
+- **F1 Score**: 0.7-0.9
+- **ROC AUC**: 0.7-0.95
+
+**Note**: Performance depends on:
+- WiFi router configuration (2.4GHz vs 5GHz)
+- Environmental factors (walls, furniture, interference)
+- Signal quality and noise levels
+- Data collection quality and labeling accuracy
+
+### Generate Synthetic Motion Data (for testing)
+
+```bash
+# Generate synthetic time-series data
+python scripts/generate_synthetic_motion_data.py \
+    --num_samples 2000 \
+    --sampling_rate 10.0 \
+    --movement_ratio 0.5 \
+    --output data/synthetic_motion_data.json
+```
+
+## Data Format
+
+Time-series data is stored in JSON format:
+
+```json
+{
+  "rssi": -65,
+  "snr": 30,
+  "signal_strength": 75,
+  "channel": 44,
+  "ssid": "MyWiFi",
+  "timestamp": "2025-01-15T10:00:00",
+  "unix_timestamp": 1705312800.0,
+  "movement": true,
+  "movement_label": 1,
+  "location": "room1",
+  "device_id": "macbook-pro",
+  "device_hostname": "MacBook-Pro",
+  "device_platform": "macOS"
+}
 ```
 
 ## Requirements
 
 - Python 3.8+
-- PyTorch 2.0+
 - NumPy, Pandas
-- matplotlib (for visualization)
-- scikit-learn (for data preprocessing)
+- scikit-learn
+- matplotlib, seaborn
+- joblib (for model saving)
 
-## Files
-
-### Essential Files
-
-- `collect_with_position.py` - Data collection with position tracking
-- `scripts/train_heatmap.py` - Train heatmap model
-- `scripts/generate_heatmap.py` - Generate heatmap visualization
-- `scripts/validate_collected_data.py` - Validate data
-- `scripts/combine_multi_device_data.py` - Combine data
-- `src/models/heatmap_model.py` - Heatmap model architecture
-- `src/data_collection/wifi_collector.py` - WiFi data collection
-- `src/preprocessing/data_loader.py` - Data loading
-- `src/preprocessing/wifi_to_csi.py` - WiFi to CSI conversion
-
-## Usage Examples
-
-### Complete Workflow
+## Installation
 
 ```bash
-# 1. Collect data
-python collect_with_position.py --location Room_101 --interactive --duration 30
-
-# 2. Train model
-python scripts/train_heatmap.py \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --num_epochs 100
-
-# 3. Generate heatmap
-python scripts/generate_heatmap.py \
-    --model_path checkpoints/signal_heatmap_model.pth \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --feature 0 \
-    --feature_name "RSSI" \
-    --show_points
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-## Troubleshooting
+## Check Trained Models
 
-### WiFi Connection Issues
+```bash
+# Check which models are trained
+python scripts/check_trained_models.py
+```
 
-- Ensure you are connected to WiFi
-- Check System Preferences > Network > WiFi
-- Verify `system_profiler SPAirPortDataType` works
+## Limitations
 
-### Data Collection Issues
+1. **RSSI/SNR Only**: Currently uses RSSI and SNR, not full CSI (Channel State Information)
+2. **5GHz Limitations**: 5GHz signals have less penetration and multipath effects, making motion detection harder
+3. **Environmental Factors**: Performance depends on room layout, furniture, and interference
+4. **Labeling**: Requires manual labeling of movement vs no movement during data collection
 
-- Check WiFi connection before starting
-- Verify device has network permissions
-- Use `--duration` to control collection time
+## Next Steps
 
-### Training Issues
+1. **Collect Real Data**: Collect more real-world data with accurate labels
+2. **Improve Features**: Add frequency-domain features (FFT) and more sophisticated feature engineering
+3. **Better Models**: Experiment with deep learning models (LSTM, CNN)
+4. **CSI Integration**: Integrate full CSI data if available from compatible hardware
+5. **Multi-Room Detection**: Extend to multiple rooms and locations
 
-- Ensure you have enough data (recommended: 50+ samples)
-- Check data format with validation script
-- Verify data path is correct
-- Collect from multiple positions (10-20 minimum)
+## References
 
-### Heatmap Quality
-
-- Collect more data points (20+ positions)
-- Ensure good coverage across room
-- Train for more epochs
-- Check data quality (signal variation)
-
-## Notes
-
-- **Real Data Only**: This project only collects and uses real WiFi data
-- **Position-Based**: Requires position coordinates for each data sample
-- **Heatmap Focus**: Generates WiFi signal heatmaps for spatial analysis
-- **Portable**: Can collect data from multiple devices/locations
+- Inspired by "Human Identification Using WiFi Signal" paper
+- WiFi CSI-Based motion detection research
+- Random Forest baseline for time-series classification
 
 ## License
 
