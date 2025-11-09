@@ -1,0 +1,422 @@
+[
+  {
+    "ssid": "Connected",
+    "rssi": -59,
+    "noise": -92,
+    "snr": 33,
+    "signal_strength": 58,
+    "signals": [
+      -59
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:02.126058",
+    "unix_timestamp": 1762680962.126085,
+    "collection_method": "system_profiler",
+    "cluster": 6
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -56,
+    "noise": -92,
+    "snr": 36,
+    "signal_strength": 62,
+    "signals": [
+      -56
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:05.163001",
+    "unix_timestamp": 1762680965.1630259,
+    "collection_method": "system_profiler",
+    "cluster": 7
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -58,
+    "noise": -92,
+    "snr": 34,
+    "signal_strength": 60,
+    "signals": [
+      -58
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:08.300468",
+    "unix_timestamp": 1762680968.300489,
+    "collection_method": "system_profiler",
+    "cluster": 0
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -55,
+    "noise": -92,
+    "snr": 37,
+    "signal_strength": 64,
+    "signals": [
+      -55
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:11.269779",
+    "unix_timestamp": 1762680971.2697961,
+    "collection_method": "system_profiler",
+    "cluster": 3
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -55,
+    "noise": -92,
+    "snr": 37,
+    "signal_strength": 64,
+    "signals": [
+      -55
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:14.441597",
+    "unix_timestamp": 1762680974.441615,
+    "collection_method": "system_profiler",
+    "cluster": 3
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -55,
+    "noise": -92,
+    "snr": 37,
+    "signal_strength": 64,
+    "signals": [
+      -55
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:17.510455",
+    "unix_timestamp": 1762680977.510473,
+    "collection_method": "system_profiler",
+    "cluster": 3
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -55,
+    "noise": -92,
+    "snr": 37,
+    "signal_strength": 64,
+    "signals": [
+      -55
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:20.600980",
+    "unix_timestamp": 1762680980.6009972,
+    "collection_method": "system_profiler",
+    "cluster": 3
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -58,
+    "noise": -92,
+    "snr": 34,
+    "signal_strength": 60,
+    "signals": [
+      -58
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:23.686949",
+    "unix_timestamp": 1762680983.686966,
+    "collection_method": "system_profiler",
+    "cluster": 0
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -55,
+    "noise": -92,
+    "snr": 37,
+    "signal_strength": 64,
+    "signals": [
+      -55
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:26.847268",
+    "unix_timestamp": 1762680986.847291,
+    "collection_method": "system_profiler",
+    "cluster": 3
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -55,
+    "noise": -92,
+    "snr": 37,
+    "signal_strength": 64,
+    "signals": [
+      -55
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:29.947584",
+    "unix_timestamp": 1762680989.947604,
+    "collection_method": "system_profiler",
+    "cluster": 3
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -54,
+    "noise": -92,
+    "snr": 38,
+    "signal_strength": 65,
+    "signals": [
+      -54
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:33.011352",
+    "unix_timestamp": 1762680993.011373,
+    "collection_method": "system_profiler",
+    "cluster": 1
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -53,
+    "noise": -92,
+    "snr": 39,
+    "signal_strength": 67,
+    "signals": [
+      -53
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:36.162025",
+    "unix_timestamp": 1762680996.1620438,
+    "collection_method": "system_profiler",
+    "cluster": 4
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -53,
+    "noise": -91,
+    "snr": 38,
+    "signal_strength": 67,
+    "signals": [
+      -53
+    ],
+    "noises": [
+      -91
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:39.307554",
+    "unix_timestamp": 1762680999.307595,
+    "collection_method": "system_profiler",
+    "cluster": 5
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -53,
+    "noise": -92,
+    "snr": 39,
+    "signal_strength": 67,
+    "signals": [
+      -53
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:42.455779",
+    "unix_timestamp": 1762681002.455814,
+    "collection_method": "system_profiler",
+    "cluster": 4
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -55,
+    "noise": -92,
+    "snr": 37,
+    "signal_strength": 64,
+    "signals": [
+      -55
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:45.531014",
+    "unix_timestamp": 1762681005.531053,
+    "collection_method": "system_profiler",
+    "cluster": 3
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -54,
+    "noise": -92,
+    "snr": 38,
+    "signal_strength": 65,
+    "signals": [
+      -54
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:48.683190",
+    "unix_timestamp": 1762681008.683211,
+    "collection_method": "system_profiler",
+    "cluster": 1
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -57,
+    "noise": -92,
+    "snr": 35,
+    "signal_strength": 61,
+    "signals": [
+      -57
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:51.773544",
+    "unix_timestamp": 1762681011.773561,
+    "collection_method": "system_profiler",
+    "cluster": 7
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -58,
+    "noise": -92,
+    "snr": 34,
+    "signal_strength": 60,
+    "signals": [
+      -58
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:54.828620",
+    "unix_timestamp": 1762681014.828643,
+    "collection_method": "system_profiler",
+    "cluster": 0
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -55,
+    "noise": -92,
+    "snr": 37,
+    "signal_strength": 64,
+    "signals": [
+      -55
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:06:57.911847",
+    "unix_timestamp": 1762681017.911871,
+    "collection_method": "system_profiler",
+    "cluster": 3
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -54,
+    "noise": -95,
+    "snr": 41,
+    "signal_strength": 65,
+    "signals": [
+      -54
+    ],
+    "noises": [
+      -95
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T15:07:00.970324",
+    "unix_timestamp": 1762681020.970342,
+    "collection_method": "system_profiler",
+    "cluster": 2
+  }
+]

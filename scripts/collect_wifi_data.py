@@ -22,7 +22,6 @@ def main():
     parser.add_argument('--output', type=str, default=None, help='Output file path')
     parser.add_argument('--format', type=str, default='json', choices=['json', 'csv'], help='Output format')
     parser.add_argument('--interface', type=str, default='en0', help='Network interface name')
-    parser.add_argument('--use_mock', action='store_true', help='Use mock data instead of trying to collect real WiFi data')
     
     args = parser.parse_args()
     
@@ -32,19 +31,27 @@ def main():
         os.makedirs("data", exist_ok=True)
         args.output = f"data/wifi_data_{timestamp}.{args.format}"
     
-    print(f"Starting WiFi data collection...")
-    print(f"  Duration: {args.duration} seconds")
-    print(f"  Sampling rate: {args.sampling_rate} Hz")
-    print(f"  Interface: {args.interface}")
-    print(f"  Output: {args.output}")
+    print("=" * 70)
+    print("Real WiFi Data Collection")
+    print("=" * 70)
+    print(f"Duration: {args.duration} seconds")
+    print(f"Sampling rate: {args.sampling_rate} Hz")
+    print(f"Interface: {args.interface}")
+    print(f"Output: {args.output}")
+    print()
+    print("⚠️  NOTE: Only REAL WiFi data will be collected.")
+    print("   Please ensure you are connected to WiFi before starting.")
     print()
     
-    # Create collector
-    collector = WiFiCollector(
-        interface=args.interface,
-        sampling_rate=args.sampling_rate,
-        use_mock=args.use_mock
-    )
+    # Create collector (will raise error if real data collection is not available)
+    try:
+        collector = WiFiCollector(
+            interface=args.interface,
+            sampling_rate=args.sampling_rate
+        )
+    except RuntimeError as e:
+        print(str(e))
+        sys.exit(1)
     
     # Collect data
     try:

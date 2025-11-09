@@ -93,7 +93,7 @@ class SpatialModel(nn.Module):
         self.model_size = model_size
         
         # Get configuration
-        if model_size == ModelSize.CUSTOM:
+        if False:  # ModelSize.CUSTOM not implemented
             # Use provided custom parameters
             self.base_channels = base_channels or 32
             self.latent_dim = latent_dim or 128

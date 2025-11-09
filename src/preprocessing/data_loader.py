@@ -146,6 +146,17 @@ class CSIDataset(Dataset):
                 import pickle
                 with open(data_path, 'rb') as f:
                     self.csi_data = pickle.load(f)
+            elif data_path.endswith('.json'):
+                # Convert WiFi JSON data to CSI format
+                from src.preprocessing.wifi_to_csi import convert_wifi_json_to_csi
+                print(f"Converting WiFi JSON data to CSI format...")
+                self.csi_data = convert_wifi_json_to_csi(
+                    data_path,
+                    num_antennas=num_antennas,
+                    num_subcarriers=num_subcarriers,
+                    method='realistic'
+                )
+                print(f"Converted {len(self.csi_data)} WiFi samples to CSI format")
             else:
                 raise ValueError(f"Unsupported CSI data format: {data_path}")
         else:

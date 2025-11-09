@@ -20,45 +20,50 @@ class WiFiCollector:
     Future: Can be extended to collect full CSI data with compatible hardware.
     """
     
-    def __init__(self, interface: str = "en0", sampling_rate: float = 1.0, use_mock: bool = False):
+    def __init__(self, interface: str = "en0", sampling_rate: float = 1.0):
         """
-        Initialize WiFi collector.
+        Initialize WiFi collector for REAL WiFi data collection only.
         
         Args:
             interface: Network interface name (usually 'en0' for WiFi on Mac)
             sampling_rate: Sampling rate in Hz (samples per second)
-            use_mock: If True, use mock data instead of trying to collect real data
+            
+        Raises:
+            RuntimeError: If no real WiFi data collection method is available
         """
         self.interface = interface
         self.sampling_rate = sampling_rate
         self.sample_interval = 1.0 / sampling_rate
         self.data = []
-        self.use_mock = use_mock
         self.airport_path = None
         self.collection_method = None
-        self._warned_about_mock = False
         
-        # Try to find airport utility
-        if not use_mock:
-            self.airport_path = self._find_airport_utility()
-            if self.airport_path:
-                self.collection_method = "airport"
-            else:
-                # Try system_profiler first (works better than networksetup)
-                if self._check_system_profiler():
-                    self.collection_method = "system_profiler"
-                # Try alternative methods
-                elif self._check_networksetup():
-                    self.collection_method = "networksetup"
-                else:
-                    self.collection_method = "mock"
-                    if not self._warned_about_mock:
-                        print("⚠️  Warning: Could not find WiFi data collection method. Using mock data.")
-                        print("   To use mock data explicitly, set use_mock=True")
-                        self._warned_about_mock = True
+        # Try to find real WiFi data collection method
+        self.airport_path = self._find_airport_utility()
+        if self.airport_path:
+            self.collection_method = "airport"
         else:
-            self.collection_method = "mock"
-            print("ℹ️  Using mock WiFi data (use_mock=True)")
+            # Try system_profiler first (works better than networksetup on newer Macs)
+            if self._check_system_profiler():
+                self.collection_method = "system_profiler"
+            # Try alternative methods
+            elif self._check_networksetup():
+                self.collection_method = "networksetup"
+            else:
+                raise RuntimeError(
+                    "❌ ERROR: No real WiFi data collection method available!\n"
+                    "   This system cannot collect real WiFi data.\n"
+                    "   Please ensure:\n"
+                    "   1. You are connected to WiFi\n"
+                    "   2. Your Mac has system_profiler or networksetup available\n"
+                    "   3. You have appropriate permissions\n"
+                    "   \n"
+                    "   Note: Mock data is not supported. Only real WiFi data collection is allowed."
+                )
+        
+        print(f"✅ Real WiFi data collection initialized")
+        print(f"   Collection method: {self.collection_method}")
+        print(f"   Interface: {self.interface}")
     
     def _find_airport_utility(self) -> Optional[str]:
         """Try to find the airport utility in common locations."""
@@ -139,15 +144,14 @@ class WiFiCollector:
         
     def get_wifi_info(self) -> Dict:
         """
-        Get current WiFi information using available methods.
+        Get current WiFi information using REAL data collection methods only.
         
         Returns:
             Dictionary containing WiFi signal information
+            
+        Raises:
+            RuntimeError: If real WiFi data cannot be collected
         """
-        # Use mock data if explicitly requested or if no collection method available
-        if self.use_mock or self.collection_method == "mock":
-            return self._get_mock_data()
-        
         # Try airport utility
         if self.collection_method == "airport" and self.airport_path:
             try:
@@ -164,9 +168,16 @@ class WiFiCollector:
                     wifi_info['unix_timestamp'] = time.time()
                     wifi_info['collection_method'] = 'airport'
                     return wifi_info
-            except Exception:
-                # Fall through to other methods
-                pass
+                else:
+                    raise RuntimeError(
+                        f"❌ Failed to collect WiFi data using airport utility.\n"
+                        f"   Return code: {result.returncode}\n"
+                        f"   Please ensure you are connected to WiFi."
+                    )
+            except subprocess.TimeoutExpired:
+                raise RuntimeError("❌ WiFi data collection timed out. Please try again.")
+            except Exception as e:
+                raise RuntimeError(f"❌ Error collecting WiFi data with airport: {str(e)}")
         
         # Try system_profiler (best method on newer Macs)
         if self.collection_method == "system_profiler":
@@ -177,33 +188,44 @@ class WiFiCollector:
                     wifi_info['unix_timestamp'] = time.time()
                     wifi_info['collection_method'] = 'system_profiler'
                     return wifi_info
+                else:
+                    raise RuntimeError(
+                        "❌ Failed to collect real WiFi data using system_profiler.\n"
+                        "   Please ensure:\n"
+                        "   1. You are connected to WiFi\n"
+                        "   2. WiFi is enabled on your Mac\n"
+                        "   3. You have network permissions"
+                    )
             except Exception as e:
-                # Fall through to other methods
-                pass
+                raise RuntimeError(f"❌ Error collecting WiFi data with system_profiler: {str(e)}")
         
         # Try networksetup as fallback
         if self.collection_method == "networksetup":
             try:
                 wifi_info = self._get_info_from_networksetup()
-                if wifi_info:
+                if wifi_info and wifi_info.get('ssid') != 'Unknown':
                     wifi_info['timestamp'] = datetime.now().isoformat()
                     wifi_info['unix_timestamp'] = time.time()
                     wifi_info['collection_method'] = 'networksetup'
                     return wifi_info
                 else:
-                    # Not connected to WiFi - use mock data with variation
-                    mock_data = self._get_mock_data()
-                    mock_data['collection_method'] = 'networksetup_fallback'
-                    mock_data['ssid'] = 'Not Connected'
-                    return mock_data
-            except Exception:
-                # Fall through to mock data
-                pass
+                    raise RuntimeError(
+                        "❌ Not connected to WiFi or unable to collect real data.\n"
+                        "   Please:\n"
+                        "   1. Connect to a WiFi network\n"
+                        "   2. Ensure WiFi is enabled\n"
+                        "   3. Check your network connection"
+                    )
+            except RuntimeError:
+                raise
+            except Exception as e:
+                raise RuntimeError(f"❌ Error collecting WiFi data with networksetup: {str(e)}")
         
-        # Fallback to mock data
-        mock_data = self._get_mock_data()
-        mock_data['collection_method'] = 'mock'
-        return mock_data
+        # Should never reach here, but just in case
+        raise RuntimeError(
+            "❌ No valid WiFi data collection method available.\n"
+            "   This should not happen. Please check your system configuration."
+        )
     
     def _get_info_from_networksetup(self) -> Optional[Dict]:
         """Get WiFi info using networksetup (limited information)."""
@@ -409,18 +431,6 @@ class WiFiCollector:
         
         return info
     
-    def _get_mock_data(self) -> Dict:
-        """Generate mock WiFi data for testing when real collection fails."""
-        return {
-            'rssi': np.random.randint(-90, -50),
-            'signal_strength': np.random.uniform(20, 80),
-            'channel': np.random.choice([1, 6, 11, 36, 40, 44, 48]),
-            'snr': np.random.randint(10, 40),
-            'ssid': 'RUCKUS_NETWORK',
-            'bssid': '00:11:22:33:44:55',
-            'timestamp': datetime.now().isoformat(),
-            'unix_timestamp': time.time()
-        }
     
     def collect_sample(self, duration: float = 1.0) -> List[Dict]:
         """
@@ -459,17 +469,21 @@ class WiFiCollector:
             duration: Duration in seconds
             save_path: Optional path to save data periodically
         """
-        print(f"Starting continuous WiFi collection for {duration} seconds...")
+        print(f"Starting continuous REAL WiFi data collection for {duration} seconds...")
         print(f"Collection method: {self.collection_method}")
-        if self.collection_method == "mock":
-            print("⚠️  Note: Using mock data. Real WiFi data collection is not available on this system.")
-        elif self.collection_method == "networksetup":
-            # Test if we're actually connected
-            test_result = self._get_info_from_networksetup()
-            if not test_result or test_result.get('ssid') == 'Unknown':
-                print("⚠️  Note: Not connected to WiFi or limited data available.")
-                print("   Consider using --use_mock for varied mock data, or connect to WiFi for real data.")
+        print(f"Interface: {self.interface}")
         print()
+        
+        # Verify connection before starting
+        try:
+            test_sample = self.get_wifi_info()
+            print(f"✅ WiFi connection verified: {test_sample.get('ssid', 'Unknown')}")
+            print(f"   RSSI: {test_sample.get('rssi', 'N/A')} dBm")
+            print()
+        except RuntimeError as e:
+            print(f"❌ ERROR: Cannot collect real WiFi data!")
+            print(str(e))
+            raise
         
         start_time = time.time()
         sample_count = 0
@@ -493,18 +507,26 @@ class WiFiCollector:
                         elapsed = time.time() - start_time
                         print(f"✓ Collected {sample_count} samples (elapsed: {elapsed:.1f}s)")
                     
+                except RuntimeError as e:
+                    # Real error - cannot continue without real data
+                    print(f"\n❌ FATAL ERROR: Cannot collect real WiFi data!")
+                    print(f"   Error: {str(e)}")
+                    print(f"   Collected {sample_count} samples before failure.")
+                    raise
                 except Exception as e:
                     error_count += 1
                     # Only print errors occasionally to avoid spam
                     if error_count - last_error_print >= 10:
                         print(f"⚠️  Error collecting sample (errors: {error_count}): {str(e)[:50]}")
                         last_error_print = error_count
-                    # Still add mock data to continue collection
-                    mock_data = self._get_mock_data()
-                    mock_data['collection_method'] = 'mock'
-                    mock_data['error'] = True
-                    self.data.append(mock_data)
-                    sample_count += 1
+                    # Skip this sample - we don't use mock data
+                    # If too many errors, fail
+                    if error_count > 100:
+                        raise RuntimeError(
+                            f"❌ Too many errors ({error_count}) during collection.\n"
+                            f"   Collected {sample_count} samples before failure.\n"
+                            f"   Please check your WiFi connection."
+                        )
                 
                 time.sleep(self.sample_interval)
                 
@@ -518,13 +540,30 @@ class WiFiCollector:
         if error_count > 0:
             print(f"⚠️  Total errors during collection: {error_count}")
     
+    def _make_json_serializable(self, obj):
+        """Convert numpy types to Python native types for JSON serialization."""
+        if isinstance(obj, (np.integer, np.int64, np.int32)):
+            return int(obj)
+        elif isinstance(obj, (np.floating, np.float64, np.float32)):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, dict):
+            return {key: self._make_json_serializable(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [self._make_json_serializable(item) for item in obj]
+        else:
+            return obj
+    
     def save_data(self, filepath: str, format: str = 'json'):
         """Save collected data to file."""
         os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
         
         if format == 'json':
+            # Ensure data is JSON serializable
+            serializable_data = self._make_json_serializable(self.data)
             with open(filepath, 'w') as f:
-                json.dump(self.data, f, indent=2)
+                json.dump(serializable_data, f, indent=2)
         elif format == 'csv':
             df = pd.DataFrame(self.data)
             df.to_csv(filepath, index=False)

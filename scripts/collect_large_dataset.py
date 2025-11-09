@@ -20,35 +20,42 @@ def collect_large_dataset(
     total_samples: int = 10000,
     sampling_rate: float = 2.0,
     output_dir: str = "data/large_dataset",
-    use_mock: bool = False,
     save_interval: int = 1000
 ):
     """
-    Collect a large dataset for training.
+    Collect a large dataset of REAL WiFi data for training.
     
     Args:
         total_samples: Total number of samples to collect
         sampling_rate: Samples per second
         output_dir: Directory to save data
-        use_mock: Use mock data instead of real WiFi
         save_interval: Save data every N samples
+        
+    Raises:
+        RuntimeError: If real WiFi data collection is not available
     """
     print("=" * 70)
-    print("Large Dataset Collection for 50M Parameter Model")
+    print("Large Dataset Collection - Real WiFi Data Only")
     print("=" * 70)
     print()
     print(f"Target samples: {total_samples:,}")
     print(f"Sampling rate: {sampling_rate} Hz")
     print(f"Estimated time: {total_samples / sampling_rate / 60:.1f} minutes")
     print(f"Output directory: {output_dir}")
-    print(f"Collection method: {'Mock data' if use_mock else 'Real WiFi'}")
+    print()
+    print("⚠️  NOTE: Only REAL WiFi data will be collected.")
+    print("   Please ensure you are connected to WiFi before starting.")
     print()
     
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
-    # Create collector
-    collector = WiFiCollector(sampling_rate=sampling_rate, use_mock=use_mock)
+    # Create collector (will raise error if real data collection is not available)
+    try:
+        collector = WiFiCollector(sampling_rate=sampling_rate)
+    except RuntimeError as e:
+        print(str(e))
+        raise
     
     # Calculate duration
     duration = total_samples / sampling_rate
@@ -196,8 +203,6 @@ def main():
                        help='Sampling rate in Hz (default: 2.0)')
     parser.add_argument('--output_dir', type=str, default='data/large_dataset',
                        help='Output directory (default: data/large_dataset)')
-    parser.add_argument('--use_mock', action='store_true',
-                       help='Use mock data instead of real WiFi')
     parser.add_argument('--save_interval', type=int, default=1000,
                        help='Save data every N samples (default: 1000)')
     parser.add_argument('--auto_continue', action='store_true',
@@ -212,9 +217,10 @@ def main():
     
     # Calculate estimated time
     estimated_minutes = args.total_samples / args.sampling_rate / 60
-    print(f"⚠️  This will collect {args.total_samples:,} samples")
+    print(f"⚠️  This will collect {args.total_samples:,} REAL WiFi samples")
     print(f"⚠️  Estimated time: {estimated_minutes:.1f} minutes ({estimated_minutes/60:.1f} hours)")
     print(f"⚠️  Make sure you have enough disk space!")
+    print(f"⚠️  Ensure you are connected to WiFi!")
     print()
     
     # Auto-continue if flag set or non-interactive
@@ -227,13 +233,16 @@ def main():
             print("Cancelled.")
             return
     
-    collect_large_dataset(
-        total_samples=args.total_samples,
-        sampling_rate=args.sampling_rate,
-        output_dir=args.output_dir,
-        use_mock=args.use_mock,
-        save_interval=args.save_interval
-    )
+    try:
+        collect_large_dataset(
+            total_samples=args.total_samples,
+            sampling_rate=args.sampling_rate,
+            output_dir=args.output_dir,
+            save_interval=args.save_interval
+        )
+    except RuntimeError as e:
+        print(f"\n❌ Collection failed: {str(e)}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

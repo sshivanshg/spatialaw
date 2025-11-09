@@ -1,0 +1,42 @@
+[
+  {
+    "ssid": "Connected",
+    "rssi": -57,
+    "noise": -91,
+    "snr": 34,
+    "signal_strength": 61,
+    "signals": [
+      -57
+    ],
+    "noises": [
+      -91
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T16:15:37.120304",
+    "unix_timestamp": 1762685137.120328,
+    "collection_method": "system_profiler"
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -58,
+    "noise": -93,
+    "snr": 35,
+    "signal_strength": 60,
+    "signals": [
+      -58
+    ],
+    "noises": [
+      -93
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T16:15:40.230329",
+    "unix_timestamp": 1762685140.2303512,
+    "collection_method": "system_profiler"
+  }
+]
