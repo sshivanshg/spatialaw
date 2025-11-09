@@ -252,7 +252,7 @@ trainer.train(num_epochs=50)
 ### Mac WiFi Collection Issues
 
 If `airport` command is not found (common on newer Macs):
-- ✅ **This is normal** - The code automatically falls back to mock data
+-  **This is normal** - The code automatically falls back to mock data
 - Use `--use_mock` flag to explicitly use mock data: `python scripts/collect_wifi_data.py --duration 60 --use_mock`
 - Mock data is sufficient for development and testing
 - For real CSI data, consider using Linux systems or Ruckus API access

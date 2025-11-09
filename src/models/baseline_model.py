@@ -66,20 +66,24 @@ class BaselineSpatialModel(nn.Module):
         layers = []
         
         # Input: (batch, input_channels, num_antennas, num_subcarriers)
-        # First conv block
+        # For small inputs (3 antennas, 64 subcarriers), use smaller kernels and adaptive pooling
+        
+        # First conv block - use smaller kernel to preserve spatial info
         layers.extend([
             nn.Conv2d(self.input_channels, 32, kernel_size=3, padding=1),
             nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.MaxPool2d(2)
         ])
+        
+        # Only pool if spatial dimensions are large enough
+        # For 3x64 input, pooling to 1x32 then 0x16 would be invalid
+        # So we use adaptive pooling earlier or skip some pooling
         
         # Second conv block
         layers.extend([
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.MaxPool2d(2)
         ])
         
         # Third conv block
@@ -87,8 +91,11 @@ class BaselineSpatialModel(nn.Module):
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.AdaptiveAvgPool2d((4, 4))
         ])
+        
+        # Use adaptive pooling to get fixed size output regardless of input size
+        # This handles small inputs (3x64) gracefully
+        layers.append(nn.AdaptiveAvgPool2d((4, 4)))
         
         return nn.Sequential(*layers)
     
