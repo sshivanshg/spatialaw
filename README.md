@@ -1,37 +1,32 @@
-# Spatial Awareness through Ambient Wireless Signals - Phase-1 Baseline
+# Spatial Awareness through Ambient Wireless Signals - Motion Detection
 
 Project by Rishabh (230178) and Shivansh (230054) - Newton School of Technology
 
 ## Overview
 
-Phase-1 baseline implementation for WiFi signal spatial mapping. This project creates WiFi signal heatmaps and builds simple machine learning models to predict signal strength across indoor positions.
+WiFi-based motion detection system that classifies movement vs no movement from WiFi signal time-series data. The system uses real-time RSSI, SNR, and signal strength measurements to detect human motion in indoor environments.
 
 ## Project Structure
 
 ```
 spatialaw/
-├── notebooks/
-│   └── baseline_analysis.ipynb    # Jupyter notebook with analysis pipeline
 ├── scripts/
-│   ├── generate_synthetic_wifi_data.py  # Generate synthetic WiFi data
-│   ├── train_baseline_model.py          # Train baseline models
-│   ├── combine_multi_device_data.py     # Combine data from multiple devices
-│   ├── validate_collected_data.py       # Validate collected data
 │   ├── collect_time_series_data.py      # Collect time-series data for motion detection
 │   ├── train_motion_detector.py         # Train motion detection models
 │   ├── visualize_motion_detection.py    # Visualize motion detection results
-│   └── generate_synthetic_motion_data.py # Generate synthetic motion data
+│   ├── generate_synthetic_motion_data.py # Generate synthetic motion data
+│   ├── live_prediction.py               # Live motion detection
+│   └── check_trained_models.py          # Check which models are trained
 ├── src/
 │   ├── data_collection/          # WiFi data collection utilities
+│   │   └── wifi_collector.py     # WiFi data collector for macOS
 │   ├── preprocessing/            # Data preprocessing pipelines
 │   │   └── time_series_features.py  # Time-series feature extraction
-│   ├── models/                   # Model definitions
-│   │   └── motion_detector.py    # Motion detection models
-│   └── training/                 # Training utilities
+│   └── models/                   # Model definitions
+│       └── motion_detector.py    # Motion detection models
 ├── data/                         # Dataset storage
 ├── visualizations/               # Visualization outputs
-├── checkpoints/                  # Model checkpoints
-└── configs/                      # Configuration files
+└── checkpoints/                  # Model checkpoints
 ```
 
 ## Quick Start
@@ -47,266 +42,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Generate Synthetic Data
-
-```bash
-# Generate synthetic WiFi data (200 samples)
-python scripts/generate_synthetic_wifi_data.py \
-    --num_samples 200 \
-    --room_width 10.0 \
-    --room_height 8.0 \
-    --output data/synthetic_wifi_data.json
-```
-
-### 3. Run Baseline Analysis
-
-**Option A: Jupyter Notebook (Recommended)**
-```bash
-# Start Jupyter notebook
-jupyter notebook notebooks/baseline_analysis.ipynb
-```
-
-**Option B: Command Line**
-```bash
-# Train baseline model
-python scripts/train_baseline_model.py \
-    --data_path data/synthetic_wifi_data.json \
-    --model_type random_forest \
-    --predict_signal
-```
-
-### 4. View Visualizations
-
-Check the `visualizations/` directory for:
-- Position vs signal strength scatter plots
-- Signal distribution histograms
-- Correlation matrices
-- PCA visualizations
-- Model prediction plots
-
-## Detailed Workflow
-
-### Step 1: Generate Synthetic Data
-
-```bash
-python scripts/generate_synthetic_wifi_data.py \
-    --num_samples 200 \
-    --room_width 10.0 \
-    --room_height 8.0 \
-    --num_aps 3 \
-    --noise_level 5.0 \
-    --output data/synthetic_wifi_data.json
-```
-
-**Parameters:**
-- `--num_samples`: Number of data samples (default: 200)
-- `--room_width`: Room width in meters (default: 10.0)
-- `--room_height`: Room height in meters (default: 8.0)
-- `--num_aps`: Number of access points (default: 3)
-- `--noise_level`: Noise level in dB (default: 5.0)
-- `--output`: Output file path
-
-### Step 2: Train Baseline Model
-
-```bash
-python scripts/train_baseline_model.py \
-    --data_path data/synthetic_wifi_data.json \
-    --model_type random_forest \
-    --predict_signal \
-    --output_dir checkpoints
-```
-
-**Model Types:**
-- `random_forest`: Random Forest Regressor (default)
-- `linear`: Linear Regression
-
-**Prediction Modes:**
-- `--predict_signal`: Predict signal from position (default)
-- `--predict_position`: Predict position from signal
-
-### Step 3: Analyze Results
-
-Open the Jupyter notebook:
-```bash
-jupyter notebook notebooks/baseline_analysis.ipynb
-```
-
-The notebook includes:
-1. **Data Loading**: Load and inspect data
-2. **Preprocessing**: Clean and normalize data
-3. **Feature Extraction**: Extract features for modeling
-4. **Visualizations**: 
-   - Position vs signal strength scatter plots
-   - Signal distribution histograms
-   - Correlation matrices
-   - PCA visualizations
-5. **Model Training**: Train Random Forest and Linear Regression models
-6. **Evaluation**: Evaluate models with metrics (RMSE, MAE, R²)
-
-## Baseline Analysis Notebook
-
-The `notebooks/baseline_analysis.ipynb` notebook provides a complete analysis pipeline:
-
-1. **Data Preprocessing**
-   - Load synthetic or real WiFi data
-   - Filter outliers
-   - Normalize features
-
-2. **Feature Extraction**
-   - Extract position and signal features
-   - Statistical feature extraction
-   - Feature scaling
-
-3. **Visualizations**
-   - Position vs signal strength heatmaps
-   - Signal distribution histograms
-   - Correlation matrices
-   - PCA scatter plots
-
-4. **Model Training**
-   - Random Forest Regressor
-   - Linear Regression
-   - Model comparison
-
-5. **Evaluation**
-   - RMSE, MAE, R² metrics
-   - Prediction vs actual plots
-   - Model performance comparison
-
-## Data Format
-
-The synthetic data generator creates JSON files with the following structure:
-
-```json
-{
-  "position_x": 2.5,
-  "position_y": 3.0,
-  "rssi": -65.2,
-  "snr": 30.5,
-  "signal_strength": 75,
-  "channel": 44,
-  "noise": -95,
-  "timestamp": "2025-11-09T10:00:00",
-  "location": "synthetic_room"
-}
-```
-
-## Model Performance
-
-### Random Forest Model
-- **Input**: Position coordinates (x, y)
-- **Output**: RSSI (signal strength in dBm)
-- **Typical Performance**: R² > 0.85, RMSE < 5 dBm
-
-### Linear Regression Model
-- **Input**: Position coordinates (x, y)
-- **Output**: RSSI (signal strength in dBm)
-- **Typical Performance**: R² > 0.70, RMSE < 8 dBm
-
-## Visualizations
-
-The baseline analysis generates several visualizations:
-
-1. **Position vs Signal Strength Scatter Plot**: Shows signal distribution across room
-2. **Signal Distribution Histograms**: Distribution of RSSI, SNR, signal strength
-3. **Correlation Matrix**: Correlation between features
-4. **PCA Visualization**: Dimensionality reduction visualization
-5. **Model Predictions**: Predicted vs actual signal strength
-
-## Requirements
-
-- Python 3.8+
-- NumPy, Pandas
-- scikit-learn
-- matplotlib, seaborn
-- jupyter (for notebook)
-- joblib (for model saving)
-
-## Installation
-
-```bash
-# Install dependencies
-pip install numpy pandas scikit-learn matplotlib seaborn jupyter joblib
-```
-
-Or use the requirements file:
-```bash
-pip install -r requirements.txt
-```
-
-## Usage Examples
-
-### Generate Data and Train Model
-
-```bash
-# 1. Generate synthetic data
-python scripts/generate_synthetic_wifi_data.py --num_samples 200
-
-# 2. Train model
-python scripts/train_baseline_model.py \
-    --data_path data/synthetic_wifi_data.json \
-    --model_type random_forest
-
-# 3. View results
-# Check visualizations/ directory for plots
-# Check checkpoints/ directory for saved models
-```
-
-### Run Notebook Analysis
-
-```bash
-# Start Jupyter notebook
-jupyter notebook notebooks/baseline_analysis.ipynb
-
-# Run all cells to see complete analysis
-```
-
-## Output Files
-
-After running the baseline:
-
-- `data/synthetic_wifi_data.json`: Generated synthetic data
-- `checkpoints/baseline_*.pkl`: Trained models
-- `checkpoints/baseline_*_metrics.json`: Model metrics
-- `visualizations/baseline_*.png`: Visualization plots
-
-## Troubleshooting
-
-### Data Generation Issues
-- Ensure output directory exists: `mkdir -p data`
-- Check file permissions
-- Verify Python version (3.8+)
-
-### Model Training Issues
-- Ensure data file exists and is valid JSON
-- Check data format matches expected structure
-- Verify enough samples (50+ recommended)
-
-### Visualization Issues
-- Ensure matplotlib backend is configured
-- Check visualization directory exists: `mkdir -p visualizations`
-- Verify data is loaded correctly
-
-## Motion Detection
-
-The project now supports motion detection from WiFi time-series data. This task classifies movement vs no movement from CSI amplitude time series, providing robust signal analysis and great visualization capabilities.
-
-### Overview
-
-**Task**: Classify movement vs no movement from WiFi time-series data  
-**Input**: WiFi signal time series (RSSI, SNR, signal strength over time)  
-**Output**: Binary classification (movement / no movement)  
-**Features**: Statistical features (mean, variance, range, etc.), frequency domain features (FFT), time-domain features  
-**Models**: Random Forest, Logistic Regression, SVM
-
-### Quick Start
-
-```bash
-# Run complete pipeline (synthetic data)
-./quick_start_motion_detection.sh
-```
-
-### Collect Motion Data
+### 2. Collect Motion Data
 
 ```bash
 # Interactive mode (recommended)
@@ -331,7 +67,77 @@ python scripts/collect_time_series_data.py \
     --sampling_rate 10
 ```
 
-### Train Motion Detector
+### 3. Train Motion Detector
+
+```bash
+# Train on collected data
+python scripts/train_motion_detector.py \
+    --data_paths data/room1/time_series/*.json \
+    --model_type random_forest \
+    --window_size 20 \
+    --output_dir checkpoints
+```
+
+### 4. Run Live Prediction
+
+```bash
+# Real-time motion detection
+python scripts/live_prediction.py
+```
+
+## Motion Detection
+
+### Overview
+
+**Task**: Classify movement vs no movement from WiFi time-series data  
+**Input**: WiFi signal time series (RSSI, SNR, signal strength over time)  
+**Output**: Binary classification (movement / no movement) with confidence score  
+**Features**: 9 statistical features extracted from 20-sample windows:
+- Mean, std, variance of RSSI, SNR, signal strength
+- Range (max - min) of RSSI
+- Mean absolute change of RSSI
+
+**Models**: Random Forest (default), Logistic Regression, SVM
+
+### How It Works
+
+1. **Data Collection**: Collects real-time WiFi signals (RSSI, SNR, signal strength) at 10 Hz sampling rate
+2. **Feature Extraction**: Extracts statistical features from sliding windows (20 samples = 2 seconds)
+3. **Model Training**: Trains Random Forest classifier on labeled data (movement vs no movement)
+4. **Prediction**: Classifies new samples and outputs confidence scores
+
+### Data Collection
+
+```bash
+# Interactive mode (asks for movement label)
+python scripts/collect_time_series_data.py \
+    --location room1 \
+    --interactive \
+    --duration 60 \
+    --sampling_rate 10
+
+# Collect with movement label
+python scripts/collect_time_series_data.py \
+    --location room1 \
+    --movement \
+    --duration 60
+
+# Collect without movement label
+python scripts/collect_time_series_data.py \
+    --location room1 \
+    --no_movement \
+    --duration 60
+```
+
+**Parameters:**
+- `--location`: Location name (e.g., "room1", "office")
+- `--interactive`: Interactive mode (asks for movement label)
+- `--movement`: Label data as "movement"
+- `--no_movement`: Label data as "no movement"
+- `--duration`: Collection duration in seconds (default: 60)
+- `--sampling_rate`: Sampling rate in Hz (default: 10.0)
+
+### Training
 
 ```bash
 # Train on collected data
@@ -342,9 +148,27 @@ python scripts/train_motion_detector.py \
     --output_dir checkpoints
 
 # Model types: random_forest, logistic, svm
+# Window size: Number of samples per window (default: 20)
 ```
 
-### Visualize Motion Detection
+**Output:**
+- `checkpoints/motion_detector_*.pkl`: Trained model
+- `checkpoints/motion_detector_*_scaler.pkl`: Feature scaler
+- `checkpoints/motion_detector_*_metrics.json`: Performance metrics
+
+### Live Prediction
+
+```bash
+# Real-time motion detection
+python scripts/live_prediction.py
+```
+
+**Output:**
+- Real-time predictions every 0.1 seconds (10 Hz)
+- Confidence scores for each prediction
+- RSSI and SNR values
+
+### Visualization
 
 ```bash
 # Generate time-series plot with motion regions
@@ -354,6 +178,27 @@ python scripts/visualize_motion_detection.py \
     --scaler_path checkpoints/motion_detector_random_forest_scaler.pkl \
     --output visualizations/motion_detection_timeseries.png
 ```
+
+**Outputs:**
+- **Confusion Matrix**: `visualizations/motion_detection_confusion_matrix.png`
+- **ROC Curve**: `visualizations/motion_detection_roc_curve.png`
+- **Time-Series Plot**: `visualizations/motion_detection_timeseries.png` (with motion regions highlighted)
+- **Metrics**: `checkpoints/motion_detector_*_metrics.json` (accuracy, precision, recall, F1, ROC AUC)
+
+### Model Performance
+
+Typical performance metrics:
+- **Accuracy**: 70-90% (depending on data quality and environment)
+- **Precision**: 0.7-0.9
+- **Recall**: 0.6-0.9
+- **F1 Score**: 0.7-0.9
+- **ROC AUC**: 0.7-0.95
+
+**Note**: Performance depends on:
+- WiFi router configuration (2.4GHz vs 5GHz)
+- Environmental factors (walls, furniture, interference)
+- Signal quality and noise levels
+- Data collection quality and labeling accuracy
 
 ### Generate Synthetic Motion Data (for testing)
 
@@ -366,40 +211,70 @@ python scripts/generate_synthetic_motion_data.py \
     --output data/synthetic_motion_data.json
 ```
 
-### Motion Detection Outputs
+## Data Format
 
-After training and evaluation:
+Time-series data is stored in JSON format:
 
-- **Confusion Matrix**: `visualizations/motion_detection_confusion_matrix.png`
-- **ROC Curve**: `visualizations/motion_detection_roc_curve.png`
-- **Time-Series Plot**: `visualizations/motion_detection_timeseries.png` (with motion regions highlighted)
-- **Metrics**: `checkpoints/motion_detector_*_metrics.json` (accuracy, precision, recall, F1, ROC AUC)
+```json
+{
+  "rssi": -65,
+  "snr": 30,
+  "signal_strength": 75,
+  "channel": 44,
+  "ssid": "MyWiFi",
+  "timestamp": "2025-01-15T10:00:00",
+  "unix_timestamp": 1705312800.0,
+  "movement": true,
+  "movement_label": 1,
+  "location": "room1",
+  "device_id": "macbook-pro",
+  "device_hostname": "MacBook-Pro",
+  "device_platform": "macOS"
+}
+```
 
-### Model Performance
+## Requirements
 
-Typical performance on synthetic data:
-- **Accuracy**: 70-90% (depending on data quality)
-- **Precision**: 0.7-0.9
-- **Recall**: 0.6-0.9
-- **F1 Score**: 0.7-0.9
-- **ROC AUC**: 0.7-0.95
+- Python 3.8+
+- NumPy, Pandas
+- scikit-learn
+- matplotlib, seaborn
+- joblib (for model saving)
+
+## Installation
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+```
+
+## Check Trained Models
+
+```bash
+# Check which models are trained
+python scripts/check_trained_models.py
+```
+
+## Limitations
+
+1. **RSSI/SNR Only**: Currently uses RSSI and SNR, not full CSI (Channel State Information)
+2. **5GHz Limitations**: 5GHz signals have less penetration and multipath effects, making motion detection harder
+3. **Environmental Factors**: Performance depends on room layout, furniture, and interference
+4. **Labeling**: Requires manual labeling of movement vs no movement during data collection
 
 ## Next Steps
 
-After completing Phase-1 baseline:
-
-1. **Collect Real Data**: Use `collect_with_position.py` to collect real WiFi data for spatial mapping
-2. **Collect Motion Data**: Use `collect_time_series_data.py` to collect time-series data for motion detection
-3. **Improve Models**: Experiment with different models and features
-4. **Advanced Analysis**: Add more sophisticated preprocessing and feature engineering
-5. **Motion Detection**: Train and evaluate motion detection models
+1. **Collect Real Data**: Collect more real-world data with accurate labels
+2. **Improve Features**: Add frequency-domain features (FFT) and more sophisticated feature engineering
+3. **Better Models**: Experiment with deep learning models (LSTM, CNN)
+4. **CSI Integration**: Integrate full CSI data if available from compatible hardware
+5. **Multi-Room Detection**: Extend to multiple rooms and locations
 
 ## References
 
 - Inspired by "Human Identification Using WiFi Signal" paper
-- Uses Butterworth filter concepts for preprocessing
-- RandomForest baseline similar to reference paper
-- Adapted for spatial WiFi signal mapping
+- WiFi CSI-Based motion detection research
+- Random Forest baseline for time-series classification
 
 ## License
 
