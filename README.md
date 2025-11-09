@@ -1,31 +1,31 @@
-# Spatial Awareness through Ambient Wireless Signals
+# Spatial Awareness through Ambient Wireless Signals - Phase-1 Baseline
 
 Project by Rishabh (230178) and Shivansh (230054) - Newton School of Technology
 
 ## Overview
 
-This project creates WiFi signal heatmaps for indoor environments by collecting WiFi data from multiple positions within a room and training a model to predict signal distribution across the space.
+Phase-1 baseline implementation for WiFi signal spatial mapping. This project creates WiFi signal heatmaps and builds simple machine learning models to predict signal strength across indoor positions.
 
 ## Project Structure
 
 ```
 spatialaw/
-├── collect_with_position.py    # WiFi data collection with position tracking
-├── data/                        # Dataset storage
-├── scripts/                     # Utility scripts
-│   ├── train_heatmap.py        # Train heatmap model
-│   ├── generate_heatmap.py     # Generate heatmap visualization
-│   ├── combine_multi_device_data.py  # Combine data from multiple devices
-│   └── validate_collected_data.py    # Validate collected data
-├── src/                         # Source code
-│   ├── data_collection/        # WiFi data collection utilities
-│   ├── preprocessing/          # Data preprocessing pipelines
-│   ├── models/                 # Model definitions (heatmap models)
-│   └── training/               # Training utilities
-├── configs/                     # Configuration files
-├── checkpoints/                 # Model checkpoints
-├── logs/                        # Training logs
-└── visualizations/              # Visualization outputs
+├── notebooks/
+│   └── baseline_analysis.ipynb    # Jupyter notebook with analysis pipeline
+├── scripts/
+│   ├── generate_synthetic_wifi_data.py  # Generate synthetic WiFi data
+│   ├── train_baseline_model.py          # Train baseline models
+│   ├── combine_multi_device_data.py     # Combine data from multiple devices
+│   └── validate_collected_data.py       # Validate collected data
+├── src/
+│   ├── data_collection/          # WiFi data collection utilities
+│   ├── preprocessing/            # Data preprocessing pipelines
+│   ├── models/                   # Model definitions
+│   └── training/                 # Training utilities
+├── data/                         # Dataset storage
+├── visualizations/               # Visualization outputs
+├── checkpoints/                  # Model checkpoints
+└── configs/                      # Configuration files
 ```
 
 ## Quick Start
@@ -33,239 +33,269 @@ spatialaw/
 ### 1. Setup
 
 ```bash
-# Create virtual environment and install dependencies
-./setup.sh
-
-# Or manually:
+# Create virtual environment
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Collect Data with Positions
-
-**Interactive Mode** (Recommended):
-```bash
-python collect_with_position.py --location Room_101 --interactive --duration 30
-```
-
-This will prompt you to enter positions:
-```
-Enter position (x, y) or 'q' to quit: 0, 0
-Enter position (x, y) or 'q' to quit: 2.5, 0
-Enter position (x, y) or 'q' to quit: 5, 0
-Enter position (x, y) or 'q' to quit: q
-```
-
-**Single Position Mode**:
-```bash
-python collect_with_position.py --location Room_101 --x 2.5 --y 3.0 --duration 30
-```
-
-**Coordinate System Setup**:
-- Choose a corner of the room as origin (0, 0)
-- Measure room dimensions (meters)
-- Use consistent units
-- Plan collection points in a grid pattern (1-2 meters apart)
-
-### 3. Train Heatmap Model
+### 2. Generate Synthetic Data
 
 ```bash
-python scripts/train_heatmap.py \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
+# Generate synthetic WiFi data (200 samples)
+python scripts/generate_synthetic_wifi_data.py \
+    --num_samples 200 \
+    --room_width 10.0 \
+    --room_height 8.0 \
+    --output data/synthetic_wifi_data.json
+```
+
+### 3. Run Baseline Analysis
+
+**Option A: Jupyter Notebook (Recommended)**
+```bash
+# Start Jupyter notebook
+jupyter notebook notebooks/baseline_analysis.ipynb
+```
+
+**Option B: Command Line**
+```bash
+# Train baseline model
+python scripts/train_baseline_model.py \
+    --data_path data/synthetic_wifi_data.json \
+    --model_type random_forest \
+    --predict_signal
+```
+
+### 4. View Visualizations
+
+Check the `visualizations/` directory for:
+- Position vs signal strength scatter plots
+- Signal distribution histograms
+- Correlation matrices
+- PCA visualizations
+- Model prediction plots
+
+## Detailed Workflow
+
+### Step 1: Generate Synthetic Data
+
+```bash
+python scripts/generate_synthetic_wifi_data.py \
+    --num_samples 200 \
+    --room_width 10.0 \
+    --room_height 8.0 \
+    --num_aps 3 \
+    --noise_level 5.0 \
+    --output data/synthetic_wifi_data.json
+```
+
+**Parameters:**
+- `--num_samples`: Number of data samples (default: 200)
+- `--room_width`: Room width in meters (default: 10.0)
+- `--room_height`: Room height in meters (default: 8.0)
+- `--num_aps`: Number of access points (default: 3)
+- `--noise_level`: Noise level in dB (default: 5.0)
+- `--output`: Output file path
+
+### Step 2: Train Baseline Model
+
+```bash
+python scripts/train_baseline_model.py \
+    --data_path data/synthetic_wifi_data.json \
+    --model_type random_forest \
     --predict_signal \
-    --num_epochs 100 \
-    --batch_size 32
+    --output_dir checkpoints
 ```
 
-### 4. Generate Heatmap
+**Model Types:**
+- `random_forest`: Random Forest Regressor (default)
+- `linear`: Linear Regression
 
+**Prediction Modes:**
+- `--predict_signal`: Predict signal from position (default)
+- `--predict_position`: Predict position from signal
+
+### Step 3: Analyze Results
+
+Open the Jupyter notebook:
 ```bash
-python scripts/generate_heatmap.py \
-    --model_path checkpoints/signal_heatmap_model.pth \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --feature 0 \
-    --feature_name "RSSI" \
-    --show_points \
-    --output visualizations/room_101_heatmap.png
+jupyter notebook notebooks/baseline_analysis.ipynb
 ```
 
-## Data Collection
+The notebook includes:
+1. **Data Loading**: Load and inspect data
+2. **Preprocessing**: Clean and normalize data
+3. **Feature Extraction**: Extract features for modeling
+4. **Visualizations**: 
+   - Position vs signal strength scatter plots
+   - Signal distribution histograms
+   - Correlation matrices
+   - PCA visualizations
+5. **Model Training**: Train Random Forest and Linear Regression models
+6. **Evaluation**: Evaluate models with metrics (RMSE, MAE, R²)
 
-### Setup Coordinates
+## Baseline Analysis Notebook
 
-1. **Choose origin**: Pick a corner of the room as (0, 0)
-2. **Measure room**: Note dimensions (e.g., 5m × 4m)
-3. **Plan points**: Create a grid of collection points (1-2m apart)
-4. **Collect data**: Stay at each position for 30-60 seconds
+The `notebooks/baseline_analysis.ipynb` notebook provides a complete analysis pipeline:
 
-### Collection Tips
+1. **Data Preprocessing**
+   - Load synthetic or real WiFi data
+   - Filter outliers
+   - Normalize features
 
-- Collect from at least 10-20 different positions
-- Space positions evenly across the room
-- Keep device stationary during collection
-- Cover entire room area
-- Use consistent coordinate system
+2. **Feature Extraction**
+   - Extract position and signal features
+   - Statistical feature extraction
+   - Feature scaling
 
-### Example Room Layout
+3. **Visualizations**
+   - Position vs signal strength heatmaps
+   - Signal distribution histograms
+   - Correlation matrices
+   - PCA scatter plots
 
-```
-Room (5m × 4m):
-(0,4) ──────────── (5,4)
-  │                 │
-  │      Room       │
-  │                 │
-(0,0) ──────────── (5,0)
-```
+4. **Model Training**
+   - Random Forest Regressor
+   - Linear Regression
+   - Model comparison
 
-**Collection points** (1m grid):
-- (0,0), (1,0), (2,0), (3,0), (4,0), (5,0)
-- (0,1), (1,1), (2,1), (3,1), (4,1), (5,1)
-- ... and so on
+5. **Evaluation**
+   - RMSE, MAE, R² metrics
+   - Prediction vs actual plots
+   - Model performance comparison
 
-## Model Training
+## Data Format
 
-### Signal Prediction (Position → Signal)
+The synthetic data generator creates JSON files with the following structure:
 
-Predict WiFi signal features from position coordinates:
-- **Input**: (x, y) coordinates
-- **Output**: WiFi signal features (RSSI, SNR, signal_strength, channel)
-- **Use case**: WiFi coverage mapping
-
-```bash
-python scripts/train_heatmap.py \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --predict_signal \
-    --num_epochs 100
-```
-
-### Position Prediction (Signal → Position)
-
-Predict position from WiFi signal features:
-- **Input**: WiFi signal features
-- **Output**: (x, y) coordinates
-- **Use case**: Indoor positioning
-
-```bash
-python scripts/train_heatmap.py \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --predict_position \
-    --num_epochs 100
+```json
+{
+  "position_x": 2.5,
+  "position_y": 3.0,
+  "rssi": -65.2,
+  "snr": 30.5,
+  "signal_strength": 75,
+  "channel": 44,
+  "noise": -95,
+  "timestamp": "2025-11-09T10:00:00",
+  "location": "synthetic_room"
+}
 ```
 
-## Heatmap Generation
+## Model Performance
 
-Generate heatmap visualization of WiFi signal distribution:
+### Random Forest Model
+- **Input**: Position coordinates (x, y)
+- **Output**: RSSI (signal strength in dBm)
+- **Typical Performance**: R² > 0.85, RMSE < 5 dBm
 
-```bash
-python scripts/generate_heatmap.py \
-    --model_path checkpoints/signal_heatmap_model.pth \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --feature 0 \
-    --feature_name "RSSI" \
-    --show_points
-```
+### Linear Regression Model
+- **Input**: Position coordinates (x, y)
+- **Output**: RSSI (signal strength in dBm)
+- **Typical Performance**: R² > 0.70, RMSE < 8 dBm
 
-**Features to visualize**:
-- `--feature 0`: RSSI (signal strength in dBm)
-- `--feature 1`: Signal strength (0-100 scale)
-- `--feature 2`: SNR (Signal-to-Noise Ratio)
-- `--feature 3`: Channel
+## Visualizations
 
-## Data Validation
+The baseline analysis generates several visualizations:
 
-Validate collected data:
-
-```bash
-python scripts/validate_collected_data.py data/Room_101/
-```
-
-## Combine Data from Multiple Devices
-
-If collecting from multiple devices:
-
-```bash
-python scripts/combine_multi_device_data.py --data_dir data/Room_101
-```
+1. **Position vs Signal Strength Scatter Plot**: Shows signal distribution across room
+2. **Signal Distribution Histograms**: Distribution of RSSI, SNR, signal strength
+3. **Correlation Matrix**: Correlation between features
+4. **PCA Visualization**: Dimensionality reduction visualization
+5. **Model Predictions**: Predicted vs actual signal strength
 
 ## Requirements
 
 - Python 3.8+
-- PyTorch 2.0+
 - NumPy, Pandas
-- matplotlib (for visualization)
-- scikit-learn (for data preprocessing)
+- scikit-learn
+- matplotlib, seaborn
+- jupyter (for notebook)
+- joblib (for model saving)
 
-## Files
+## Installation
 
-### Essential Files
+```bash
+# Install dependencies
+pip install numpy pandas scikit-learn matplotlib seaborn jupyter joblib
+```
 
-- `collect_with_position.py` - Data collection with position tracking
-- `scripts/train_heatmap.py` - Train heatmap model
-- `scripts/generate_heatmap.py` - Generate heatmap visualization
-- `scripts/validate_collected_data.py` - Validate data
-- `scripts/combine_multi_device_data.py` - Combine data
-- `src/models/heatmap_model.py` - Heatmap model architecture
-- `src/data_collection/wifi_collector.py` - WiFi data collection
-- `src/preprocessing/data_loader.py` - Data loading
-- `src/preprocessing/wifi_to_csi.py` - WiFi to CSI conversion
+Or use the requirements file:
+```bash
+pip install -r requirements.txt
+```
 
 ## Usage Examples
 
-### Complete Workflow
+### Generate Data and Train Model
 
 ```bash
-# 1. Collect data
-python collect_with_position.py --location Room_101 --interactive --duration 30
+# 1. Generate synthetic data
+python scripts/generate_synthetic_wifi_data.py --num_samples 200
 
 # 2. Train model
-python scripts/train_heatmap.py \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --num_epochs 100
+python scripts/train_baseline_model.py \
+    --data_path data/synthetic_wifi_data.json \
+    --model_type random_forest
 
-# 3. Generate heatmap
-python scripts/generate_heatmap.py \
-    --model_path checkpoints/signal_heatmap_model.pth \
-    --data_path data/Room_101/Room_101_all_positions_*.json \
-    --feature 0 \
-    --feature_name "RSSI" \
-    --show_points
+# 3. View results
+# Check visualizations/ directory for plots
+# Check checkpoints/ directory for saved models
 ```
+
+### Run Notebook Analysis
+
+```bash
+# Start Jupyter notebook
+jupyter notebook notebooks/baseline_analysis.ipynb
+
+# Run all cells to see complete analysis
+```
+
+## Output Files
+
+After running the baseline:
+
+- `data/synthetic_wifi_data.json`: Generated synthetic data
+- `checkpoints/baseline_*.pkl`: Trained models
+- `checkpoints/baseline_*_metrics.json`: Model metrics
+- `visualizations/baseline_*.png`: Visualization plots
 
 ## Troubleshooting
 
-### WiFi Connection Issues
+### Data Generation Issues
+- Ensure output directory exists: `mkdir -p data`
+- Check file permissions
+- Verify Python version (3.8+)
 
-- Ensure you are connected to WiFi
-- Check System Preferences > Network > WiFi
-- Verify `system_profiler SPAirPortDataType` works
+### Model Training Issues
+- Ensure data file exists and is valid JSON
+- Check data format matches expected structure
+- Verify enough samples (50+ recommended)
 
-### Data Collection Issues
+### Visualization Issues
+- Ensure matplotlib backend is configured
+- Check visualization directory exists: `mkdir -p visualizations`
+- Verify data is loaded correctly
 
-- Check WiFi connection before starting
-- Verify device has network permissions
-- Use `--duration` to control collection time
+## Next Steps
 
-### Training Issues
+After completing Phase-1 baseline:
 
-- Ensure you have enough data (recommended: 50+ samples)
-- Check data format with validation script
-- Verify data path is correct
-- Collect from multiple positions (10-20 minimum)
+1. **Collect Real Data**: Use `collect_with_position.py` to collect real WiFi data
+2. **Improve Models**: Experiment with different models and features
+3. **Advanced Analysis**: Add more sophisticated preprocessing and feature engineering
+4. **Heatmap Generation**: Generate heatmaps for signal distribution visualization
 
-### Heatmap Quality
+## References
 
-- Collect more data points (20+ positions)
-- Ensure good coverage across room
-- Train for more epochs
-- Check data quality (signal variation)
-
-## Notes
-
-- **Real Data Only**: This project only collects and uses real WiFi data
-- **Position-Based**: Requires position coordinates for each data sample
-- **Heatmap Focus**: Generates WiFi signal heatmaps for spatial analysis
-- **Portable**: Can collect data from multiple devices/locations
+- Inspired by "Human Identification Using WiFi Signal" paper
+- Uses Butterworth filter concepts for preprocessing
+- RandomForest baseline similar to reference paper
+- Adapted for spatial WiFi signal mapping
 
 ## License
 
