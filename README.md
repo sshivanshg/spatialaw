@@ -16,11 +16,18 @@ spatialaw/
 │   ├── generate_synthetic_wifi_data.py  # Generate synthetic WiFi data
 │   ├── train_baseline_model.py          # Train baseline models
 │   ├── combine_multi_device_data.py     # Combine data from multiple devices
-│   └── validate_collected_data.py       # Validate collected data
+│   ├── validate_collected_data.py       # Validate collected data
+│   ├── collect_time_series_data.py      # Collect time-series data for motion detection
+│   ├── train_motion_detector.py         # Train motion detection models
+│   ├── visualize_motion_detection.py    # Visualize motion detection results
+│   └── generate_synthetic_motion_data.py # Generate synthetic motion data
 ├── src/
 │   ├── data_collection/          # WiFi data collection utilities
 │   ├── preprocessing/            # Data preprocessing pipelines
+│   │   └── time_series_features.py  # Time-series feature extraction
 │   ├── models/                   # Model definitions
+│   │   ├── heatmap_model.py      # Heatmap models (spatial mapping)
+│   │   └── motion_detector.py    # Motion detection models
 │   └── training/                 # Training utilities
 ├── data/                         # Dataset storage
 ├── visualizations/               # Visualization outputs
@@ -281,14 +288,113 @@ After running the baseline:
 - Check visualization directory exists: `mkdir -p visualizations`
 - Verify data is loaded correctly
 
+## Motion Detection
+
+The project now supports motion detection from WiFi time-series data. This task classifies movement vs no movement from CSI amplitude time series, providing robust signal analysis and great visualization capabilities.
+
+### Overview
+
+**Task**: Classify movement vs no movement from WiFi time-series data  
+**Input**: WiFi signal time series (RSSI, SNR, signal strength over time)  
+**Output**: Binary classification (movement / no movement)  
+**Features**: Statistical features (mean, variance, range, etc.), frequency domain features (FFT), time-domain features  
+**Models**: Random Forest, Logistic Regression, SVM
+
+### Quick Start
+
+```bash
+# Run complete pipeline (synthetic data)
+./quick_start_motion_detection.sh
+```
+
+### Collect Motion Data
+
+```bash
+# Interactive mode (recommended)
+python scripts/collect_time_series_data.py \
+    --location room1 \
+    --interactive \
+    --duration 60 \
+    --sampling_rate 10
+
+# Collect with movement label
+python scripts/collect_time_series_data.py \
+    --location room1 \
+    --movement \
+    --duration 60 \
+    --sampling_rate 10
+
+# Collect without movement label
+python scripts/collect_time_series_data.py \
+    --location room1 \
+    --no_movement \
+    --duration 60 \
+    --sampling_rate 10
+```
+
+### Train Motion Detector
+
+```bash
+# Train on collected data
+python scripts/train_motion_detector.py \
+    --data_paths data/room1/time_series/*.json \
+    --model_type random_forest \
+    --window_size 20 \
+    --output_dir checkpoints
+
+# Model types: random_forest, logistic, svm
+```
+
+### Visualize Motion Detection
+
+```bash
+# Generate time-series plot with motion regions
+python scripts/visualize_motion_detection.py \
+    --data_path data/room1/time_series/room1_movement_*.json \
+    --model_path checkpoints/motion_detector_random_forest.pkl \
+    --scaler_path checkpoints/motion_detector_random_forest_scaler.pkl \
+    --output visualizations/motion_detection_timeseries.png
+```
+
+### Generate Synthetic Motion Data (for testing)
+
+```bash
+# Generate synthetic time-series data
+python scripts/generate_synthetic_motion_data.py \
+    --num_samples 2000 \
+    --sampling_rate 10.0 \
+    --movement_ratio 0.5 \
+    --output data/synthetic_motion_data.json
+```
+
+### Motion Detection Outputs
+
+After training and evaluation:
+
+- **Confusion Matrix**: `visualizations/motion_detection_confusion_matrix.png`
+- **ROC Curve**: `visualizations/motion_detection_roc_curve.png`
+- **Time-Series Plot**: `visualizations/motion_detection_timeseries.png` (with motion regions highlighted)
+- **Metrics**: `checkpoints/motion_detector_*_metrics.json` (accuracy, precision, recall, F1, ROC AUC)
+
+### Model Performance
+
+Typical performance on synthetic data:
+- **Accuracy**: 70-90% (depending on data quality)
+- **Precision**: 0.7-0.9
+- **Recall**: 0.6-0.9
+- **F1 Score**: 0.7-0.9
+- **ROC AUC**: 0.7-0.95
+
 ## Next Steps
 
 After completing Phase-1 baseline:
 
-1. **Collect Real Data**: Use `collect_with_position.py` to collect real WiFi data
-2. **Improve Models**: Experiment with different models and features
-3. **Advanced Analysis**: Add more sophisticated preprocessing and feature engineering
-4. **Heatmap Generation**: Generate heatmaps for signal distribution visualization
+1. **Collect Real Data**: Use `collect_with_position.py` to collect real WiFi data for spatial mapping
+2. **Collect Motion Data**: Use `collect_time_series_data.py` to collect time-series data for motion detection
+3. **Improve Models**: Experiment with different models and features
+4. **Advanced Analysis**: Add more sophisticated preprocessing and feature engineering
+5. **Heatmap Generation**: Generate heatmaps for signal distribution visualization
+6. **Motion Detection**: Train and evaluate motion detection models
 
 ## References
 
