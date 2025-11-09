@@ -144,5 +144,5 @@ if __name__ == "__main__":
     print(f"   Predictions: {predictions}")
     print(f"   Probabilities: {probs[0]}")
     
-    print("\n✅ Models work correctly!")
+    print("\ Models work correctly!")
 

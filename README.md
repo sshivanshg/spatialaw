@@ -26,7 +26,6 @@ spatialaw/
 │   ├── preprocessing/            # Data preprocessing pipelines
 │   │   └── time_series_features.py  # Time-series feature extraction
 │   ├── models/                   # Model definitions
-│   │   ├── heatmap_model.py      # Heatmap models (spatial mapping)
 │   │   └── motion_detector.py    # Motion detection models
 │   └── training/                 # Training utilities
 ├── data/                         # Dataset storage
@@ -393,8 +392,7 @@ After completing Phase-1 baseline:
 2. **Collect Motion Data**: Use `collect_time_series_data.py` to collect time-series data for motion detection
 3. **Improve Models**: Experiment with different models and features
 4. **Advanced Analysis**: Add more sophisticated preprocessing and feature engineering
-5. **Heatmap Generation**: Generate heatmaps for signal distribution visualization
-6. **Motion Detection**: Train and evaluate motion detection models
+5. **Motion Detection**: Train and evaluate motion detection models
 
 ## References
 

@@ -56,8 +56,8 @@ checkpoints/*.json
 logs/
 *.log
 
-# Visualizations (optional - comment out if you want to track)
-# visualizations/*.png
+# Visualizations
+visualizations/*.png
 
 # OS
 .DS_Store
