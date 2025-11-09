@@ -1,0 +1,98 @@
+[
+  {
+    "ssid": "Connected",
+    "rssi": -58,
+    "noise": -95,
+    "snr": 37,
+    "signal_strength": 60,
+    "signals": [
+      -58
+    ],
+    "noises": [
+      -95
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T16:37:19.756279",
+    "unix_timestamp": 1762686439.756321,
+    "collection_method": "system_profiler",
+    "device_id": "m.local",
+    "device_hostname": "m.local",
+    "device_platform": "macOS-26.0.1-arm64-arm-64bit-Mach-O",
+    "location": "Room_101"
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -59,
+    "noise": -92,
+    "snr": 33,
+    "signal_strength": 58,
+    "signals": [
+      -59
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T16:37:23.019583",
+    "unix_timestamp": 1762686443.019608,
+    "collection_method": "system_profiler",
+    "device_id": "m.local",
+    "device_hostname": "m.local",
+    "device_platform": "macOS-26.0.1-arm64-arm-64bit-Mach-O",
+    "location": "Room_101"
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -53,
+    "noise": -95,
+    "snr": 42,
+    "signal_strength": 67,
+    "signals": [
+      -53
+    ],
+    "noises": [
+      -95
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T16:37:26.175553",
+    "unix_timestamp": 1762686446.175572,
+    "collection_method": "system_profiler",
+    "device_id": "m.local",
+    "device_hostname": "m.local",
+    "device_platform": "macOS-26.0.1-arm64-arm-64bit-Mach-O",
+    "location": "Room_101"
+  },
+  {
+    "ssid": "Connected",
+    "rssi": -54,
+    "noise": -92,
+    "snr": 38,
+    "signal_strength": 65,
+    "signals": [
+      -54
+    ],
+    "noises": [
+      -92
+    ],
+    "num_antennas": 1,
+    "channel": 44,
+    "phy_mode": "802.11ac",
+    "bssid": "be:06:ca:b3:a6:12",
+    "timestamp": "2025-11-09T16:37:29.313595",
+    "unix_timestamp": 1762686449.313621,
+    "collection_method": "system_profiler",
+    "device_id": "m.local",
+    "device_hostname": "m.local",
+    "device_platform": "macOS-26.0.1-arm64-arm-64bit-Mach-O",
+    "location": "Room_101"
+  }
+]

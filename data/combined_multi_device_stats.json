@@ -1,0 +1,22 @@
+{
+  "total_files": 12,
+  "total_samples": 172,
+  "unique_locations": [
+    "Test_Location"
+  ],
+  "unique_devices": [
+    "m.local"
+  ],
+  "grouped_stats": {
+    "all": {
+      "files": 7,
+      "samples": 172,
+      "locations": [
+        "Test_Location"
+      ],
+      "devices": [
+        "m.local"
+      ]
+    }
+  }
+}
