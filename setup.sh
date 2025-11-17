@@ -44,11 +44,6 @@ pip install -r requirements.txt
 echo "✓ Dependencies installed"
 echo ""
 
-# Test installation
-echo "Testing installation..."
-python3 scripts/test_setup.py
-echo ""
-
 echo "=========================================="
 echo "Setup Complete!"
 echo "=========================================="
@@ -57,7 +52,7 @@ echo "To activate the virtual environment in the future:"
 echo "  source venv/bin/activate"
 echo ""
 echo "Then you can run:"
-echo "  python scripts/quick_start.py"
-echo "  python scripts/train_baseline.py"
+echo "  ./venv/bin/python scripts/train_motion_detector.py --dataset_root \"WiFi CSI HAR Dataset\" --model_type random_forest"
+echo "  ./venv/bin/python scripts/check_trained_models.py"
 echo ""
 

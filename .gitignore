@@ -4,26 +4,16 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
+.eggs/
+dist/
+build/
 
 # Virtual Environment
 venv/
 ENV/
 env/
+.venv
 
 # IDE
 .vscode/
@@ -34,20 +24,22 @@ env/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+*.ipynb
 
-# Data files (keep structure, ignore large files)
-data/*.json
-data/*.npy
-data/*.mat
+# Data files
+data/raw/
+data/processed/
+data/external/
+*.json
+*.npy
+*.mat
+*.csv
+*.pkl
+*.pth
+*.h5
+*.hdf5
 
-# Large data files (exceeds GitHub's 100MB limit)
-data/localization_data.json
-data/synthetic_motion_data_large.json
-
-# Localization dataset folder (large .mat files)
-data_wifii/
-
-# Checkpoints (keep structure, ignore model files)
+# Model checkpoints
 checkpoints/*.pkl
 checkpoints/*.pth
 checkpoints/*.json
@@ -55,15 +47,23 @@ checkpoints/*.json
 # Logs
 logs/
 *.log
+*.out
 
 # Visualizations
-visualizations/*.png
+visualizations/
+*.png
+*.jpg
+*.pdf
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Temporary files
 *.tmp
 *.bak
-*.swp
+
+# Large datasets
+data_wifii/
+
+# TensorBoard
+runs/
+*.tfevents.*
