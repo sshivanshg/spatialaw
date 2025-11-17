@@ -8,7 +8,12 @@ from typing import Iterable, List
 import numpy as np
 from scipy.io import loadmat
 
-SUPPORTED_EXTENSIONS = (".npy", ".mat", ".csv", ".txt")
+try:
+    from .dat_loader import load_dat_file
+except ImportError:
+    load_dat_file = None
+
+SUPPORTED_EXTENSIONS = (".npy", ".mat", ".csv", ".txt", ".dat")
 
 
 def load_csi_file(path: str | Path) -> np.ndarray:
@@ -48,6 +53,13 @@ def load_csi_file(path: str | Path) -> np.ndarray:
         data = np.loadtxt(path, delimiter=",")
     elif suffix == ".txt":
         data = np.loadtxt(path)
+    elif suffix == ".dat":
+        if load_dat_file is None:
+            raise ImportError(
+                "Intel 5300 .dat file support requires dat_loader module. "
+                "Ensure src/preprocess/dat_loader.py exists."
+            )
+        data = load_dat_file(path)
     else:
         raise ValueError(f"Unsupported CSI format: {path.suffix}")
 

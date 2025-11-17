@@ -33,6 +33,26 @@ DEFAULT_T = 256
 DEFAULT_STRIDE = 64
 DEFAULT_SUBCARRIERS = 30
 
+# WiAR Activity Mapping (from introduction.txt)
+WIAR_ACTIVITIES = {
+    1: "horizontal_arm_wave",
+    2: "high_arm_wave",
+    3: "two_hands_wave",
+    4: "high_throw",
+    5: "draw_x",
+    6: "draw_tick",
+    7: "toss_paper",
+    8: "forward_kick",
+    9: "side_kick",
+    10: "bend",
+    11: "hand_clap",
+    12: "walk",
+    13: "phone_call",
+    14: "drink_water",
+    15: "sit_down",
+    16: "squat",
+}
+
 ACTIVE_KEYWORDS = [
     "activity",
     "walk",
@@ -56,11 +76,50 @@ def set_random_seeds(seed: int) -> None:
 
 
 def infer_label(path: Path) -> Dict[str, object]:
+    """
+    Infer activity label from WiAR filename pattern.
+    
+    WiAR naming patterns:
+    - csi_a{activity_id}_{sample_number}.dat (e.g., csi_a10_1.dat = activity 10)
+    - {activity_id}_{packets}_sample_{antenna}.txt (e.g., 16_160_sample_A.txt = activity 16)
+    """
+    import re
+    
+    filename = path.name.lower()
+    
+    # Pattern 1: csi_a{id}_{sample}.dat
+    match = re.search(r"csi_a(\d+)_\d+", filename)
+    if match:
+        activity_id = int(match.group(1))
+        if 1 <= activity_id <= 16:
+            activity_name = WIAR_ACTIVITIES[activity_id]
+            return {
+                "label": activity_id - 1,  # 0-indexed for classification
+                "activity_id": activity_id,
+                "activity_name": activity_name,
+                "auto_label": True,
+            }
+    
+    # Pattern 2: {id}_{packets}_sample_{antenna}.txt
+    match = re.search(r"^(\d+)_\d+_sample_", filename)
+    if match:
+        activity_id = int(match.group(1))
+        if 1 <= activity_id <= 16:
+            activity_name = WIAR_ACTIVITIES[activity_id]
+            return {
+                "label": activity_id - 1,  # 0-indexed for classification
+                "activity_id": activity_id,
+                "activity_name": activity_name,
+                "auto_label": True,
+            }
+    
+    # Fallback: keyword-based detection
     text = "_".join(path.parts).lower()
     if any(keyword in text for keyword in ACTIVE_KEYWORDS):
         return {"label": 1, "auto_label": True}
     if any(keyword in text for keyword in IDLE_KEYWORDS):
         return {"label": 0, "auto_label": True}
+    
     return {"label": -1, "auto_label": False}
 
 
@@ -154,6 +213,8 @@ def main(argv: List[str] | None = None) -> int:
     processed_windows = []
     label_records = []
     observed_subcarriers = set()
+    target_subcarriers = DEFAULT_SUBCARRIERS  # Default to 30
+    target_T = args.T  # Fixed window length
 
     for idx, rec_path in enumerate(recordings, start=1):
         rel_path = rec_path.relative_to(input_root)
@@ -168,11 +229,32 @@ def main(argv: List[str] | None = None) -> int:
             print("  ⚠️  Insufficient packets for requested window length.")
             continue
 
+        # Standardize dimensions: (n_windows, subcarriers, T)
+        # Handle variable subcarrier counts
+        if len(processed_windows) == 0:
+            target_subcarriers = windows.shape[1]
+        elif windows.shape[1] != target_subcarriers:
+            if windows.shape[1] > target_subcarriers:
+                windows = windows[:, :target_subcarriers, :]
+            else:
+                pad_width = target_subcarriers - windows.shape[1]
+                windows = np.pad(windows, ((0, 0), (0, pad_width), (0, 0)), mode="constant")
+
+        # Handle variable time dimension (T)
+        if windows.shape[2] != target_T:
+            if windows.shape[2] > target_T:
+                # Truncate
+                windows = windows[:, :, :target_T]
+            else:
+                # Pad with edge values
+                pad_width = target_T - windows.shape[2]
+                windows = np.pad(windows, ((0, 0), (0, 0), (0, pad_width)), mode="edge")
+
         processed_windows.append(windows)
         label_records.extend(records)
         observed_subcarriers.add(windows.shape[1])
         summary["processed_files"].append(
-            {"path": str(rel_path), "windows": windows.shape[0]}
+            {"path": str(rel_path), "windows": windows.shape[0], "subcarriers": windows.shape[1], "T": windows.shape[2]}
         )
 
     if not processed_windows:
