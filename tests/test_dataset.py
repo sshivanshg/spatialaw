@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from src.train.dataset import CSIDataset, create_dataloaders
+from src.train.dataset import CSIDataset, create_dataloaders, DEFAULT_SEED
 
 
 def _create_sample_windows(tmp_path: Path, num_windows: int = 6) -> Path:
@@ -31,7 +31,7 @@ def _create_sample_windows(tmp_path: Path, num_windows: int = 6) -> Path:
 
 def test_csi_dataset_shapes(tmp_path):
     csv_path = _create_sample_windows(tmp_path)
-    dataset = CSIDataset(csv_path)
+    dataset = CSIDataset(csv_path, seed=DEFAULT_SEED)
 
     tensor, label = dataset[0]
     assert tensor.shape == (1, 30, 60)
@@ -44,6 +44,7 @@ def test_csi_dataset_augmentation_preserves_shape(tmp_path):
     dataset = CSIDataset(
         csv_path,
         augment=True,
+        seed=DEFAULT_SEED,
     )
 
     tensor, _ = dataset[0]
@@ -53,7 +54,7 @@ def test_csi_dataset_augmentation_preserves_shape(tmp_path):
 def test_create_dataloaders_batch_shapes(tmp_path):
     csv_path = _create_sample_windows(tmp_path, num_windows=8)
     train_loader, val_loader = create_dataloaders(
-        csv_path, csv_path, batch_size=4, shuffle=False
+        csv_path, csv_path, batch_size=4, shuffle=False, seed=DEFAULT_SEED
     )
 
     batch = next(iter(train_loader))

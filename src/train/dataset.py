@@ -13,6 +13,8 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset
 
+DEFAULT_SEED = 42
+
 
 @dataclass
 class AugmentationConfig:
@@ -38,6 +40,7 @@ class CSIDataset(Dataset):
         transform: Optional[Callable[[torch.Tensor], torch.Tensor]] = None,
         augment: bool = False,
         augment_config: AugmentationConfig | None = None,
+        seed: int = DEFAULT_SEED,
         file_column: str = "window_file",
         label_column: str = "label",
     ) -> None:
@@ -57,7 +60,7 @@ class CSIDataset(Dataset):
         self.transform = transform
         self.augment = augment
         self.aug_cfg = augment_config or AugmentationConfig()
-        self.rng = np.random.default_rng()
+        self.rng = np.random.default_rng(seed)
 
     def __len__(self) -> int:
         return len(self.df)
@@ -127,26 +130,32 @@ def create_dataloaders(
     batch_size: int = 32,
     num_workers: int = 0,
     shuffle: bool = True,
+    seed: int = DEFAULT_SEED,
     **dataset_kwargs,
 ) -> Tuple[DataLoader, DataLoader]:
     """
     Instantiate train/validation dataloaders for CSI windows.
     """
 
-    train_dataset = CSIDataset(csv_train, augment=True, **dataset_kwargs)
-    val_dataset = CSIDataset(csv_val, augment=False, **dataset_kwargs)
+    train_dataset = CSIDataset(csv_train, augment=True, seed=seed, **dataset_kwargs)
+    val_dataset = CSIDataset(csv_val, augment=False, seed=seed, **dataset_kwargs)
+
+    g = torch.Generator()
+    g.manual_seed(seed)
 
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=num_workers,
+        generator=g,
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
+        generator=g,
     )
     return train_loader, val_loader
 
