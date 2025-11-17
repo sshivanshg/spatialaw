@@ -1,32 +1,40 @@
-# Spatial Awareness through Ambient Wireless Signals - Motion Detection
+# Spatial Awareness through Ambient Wireless Signals
 
 Project by Rishabh (230178) and Shivansh (230054) - Newton School of Technology
 
 ## Overview
 
-WiFi-based motion detection system that classifies movement vs no movement from WiFi signal time-series data. The system uses real-time RSSI, SNR, and signal strength measurements to detect human motion in indoor environments.
+WiFi-based human activity recognition system using Channel State Information (CSI) from the WiAR dataset. The system processes CSI signals to classify human activities in indoor environments.
+
+**Current Focus**: Binary classification (activity present vs no activity) with visualization.
 
 ## Project Structure
 
 ```
 spatialaw/
 ├── scripts/
-│   ├── collect_time_series_data.py      # Collect time-series data for motion detection
-│   ├── train_motion_detector.py         # Train motion detection models
-│   ├── visualize_motion_detection.py    # Visualize motion detection results
-│   ├── generate_synthetic_motion_data.py # Generate synthetic motion data
-│   ├── live_prediction.py               # Live motion detection
-│   └── check_trained_models.py          # Check which models are trained
+│   ├── fetch_wiar.sh              # Download WiAR dataset
+│   ├── generate_windows.py         # Process CSI recordings into windows
+│   ├── extract_features.py         # Extract statistical features
+│   └── train_motion_detector.py    # Train classifiers (legacy, to be updated)
 ├── src/
-│   ├── data_collection/          # WiFi data collection utilities
-│   │   └── wifi_collector.py     # WiFi data collector for macOS
-│   ├── preprocessing/            # Data preprocessing pipelines
-│   │   └── time_series_features.py  # Time-series feature extraction
-│   └── models/                   # Model definitions
-│       └── motion_detector.py    # Motion detection models
-├── data/                         # Dataset storage
-├── visualizations/               # Visualization outputs
-└── checkpoints/                  # Model checkpoints
+│   ├── preprocess/                 # Data preprocessing
+│   │   ├── csi_loader.py          # Load CSI files (.dat, .txt, .csv, .npy)
+│   │   ├── dat_loader.py          # Intel 5300 .dat file parser
+│   │   ├── preprocess.py          # Windowing, denoising, normalization
+│   │   ├── features.py            # Feature extraction (14 CSI features)
+│   │   └── inspect_wiar.py        # Dataset inspection utility
+│   └── train/
+│       └── dataset.py             # PyTorch Dataset for CSI windows
+├── data/
+│   ├── raw/WiAR/                  # WiAR dataset (cloned from GitHub)
+│   └── processed/
+│       ├── windows/               # Processed CSI windows
+│       └── features/              # Extracted features
+├── notebooks/
+│   └── visualize_samples.ipynb    # Visualize CSI windows
+├── tests/                          # Unit tests
+└── logs/                          # Training logs and checkpoints
 ```
 
 ## Quick Start
@@ -36,210 +44,154 @@ spatialaw/
 ```bash
 # Create virtual environment
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Collect Motion Data
+### 2. Download WiAR Dataset
 
 ```bash
-# Interactive mode (recommended)
-python scripts/collect_time_series_data.py \
-    --location room1 \
-    --interactive \
-    --duration 60 \
-    --sampling_rate 10
-
-# Collect with movement label
-python scripts/collect_time_series_data.py \
-    --location room1 \
-    --movement \
-    --duration 60 \
-    --sampling_rate 10
-
-# Collect without movement label
-python scripts/collect_time_series_data.py \
-    --location room1 \
-    --no_movement \
-    --duration 60 \
-    --sampling_rate 10
+# Clone WiAR dataset
+./scripts/fetch_wiar.sh
 ```
 
-### 3. Train Motion Detector
+### 3. Process Dataset
 
 ```bash
-# Train on collected data
-python scripts/train_motion_detector.py \
-    --data_paths data/room1/time_series/*.json \
-    --model_type random_forest \
-    --window_size 20 \
-    --output_dir checkpoints
+# Generate windows from raw CSI recordings
+python scripts/generate_windows.py \
+    --input-dir data/raw/WiAR \
+    --out-dir data/processed/windows \
+    --T 256 \
+    --stride 64
+
+# Extract features from windows
+python scripts/extract_features.py \
+    --windows-dir data/processed/windows \
+    --output-dir data/processed/features
 ```
 
-### 4. Run Live Prediction
+## Dataset
+
+### WiAR Dataset
+
+- **Source**: [WiAR GitHub Repository](https://github.com/linteresa/WiAR)
+- **Activities**: 16 human activities (gestures + body motions)
+- **Format**: Intel 5300 CSI binary files (.dat) + text files (.txt)
+- **Processed**: 2,092 windows from 1,932 recordings
+
+### Activity Classes (16)
+
+1. horizontal_arm_wave
+2. high_arm_wave
+3. two_hands_wave
+4. high_throw
+5. draw_x
+6. draw_tick
+7. toss_paper
+8. forward_kick
+9. side_kick
+10. bend
+11. hand_clap
+12. walk
+13. phone_call
+14. drink_water
+15. sit_down
+16. squat
+
+### Current Dataset Statistics
+
+- **Total Windows**: 2,092
+- **Features per Window**: 14 CSI statistical features
+- **Feature Matrix**: `(2092, 14)` saved as `data/processed/features/features.npy`
+- **Labels**: Activity IDs 0-15 (0-indexed) mapped to 16 activities
+
+## Data Processing Pipeline
+
+### 1. CSI Loading
+- Supports multiple formats: `.dat` (Intel 5300), `.txt`, `.csv`, `.npy`
+- Uses `csiread` library for binary .dat files
+- Extracts CSI amplitudes: shape `(n_packets, 30_subcarriers)`
+
+### 2. Windowing
+- Converts continuous CSI streams to fixed-length windows
+- Window size: T=256 time steps (or available packets)
+- Stride: 64 (overlapping windows)
+- Output: `(n_windows, 30_subcarriers, 256_timesteps)`
+
+### 3. Preprocessing
+- **Denoising**: Moving average filter
+- **Normalization**: Per-window z-score normalization
+- **Standardization**: Handles variable packet/subcarrier counts
+
+### 4. Feature Extraction
+Extracts 14 statistical features from each window:
+- CSI variance (mean, std, max)
+- CSI envelope (Hilbert transform)
+- Signal entropy
+- Velocity of change (first derivative)
+- Median Absolute Deviation (MAD)
+- Motion period (dominant frequency via FFT)
+- Normalized standard deviation
+
+## Current Task: Binary Classification
+
+**Goal**: Classify "activity present" (1) vs "no activity" (0)
+
+### Next Steps
+
+1. **Relabel Data**: Convert 16-class labels → binary (all activities → 1)
+2. **Create "No Activity" Samples**: Generate baseline/idle samples (label → 0)
+3. **Train Binary Classifier**: SVM, Random Forest, Logistic Regression
+4. **Visualization**: 
+   - Confusion matrix
+   - ROC curve
+   - Time-series plot with activity regions highlighted
+   - Confidence scores
+
+## Scripts
+
+### `scripts/generate_windows.py`
+Process raw CSI recordings into fixed-length windows.
 
 ```bash
-# Real-time motion detection
-python scripts/live_prediction.py
+python scripts/generate_windows.py \
+    --input-dir data/raw/WiAR \
+    --out-dir data/processed/windows \
+    --T 256 \
+    --stride 64 \
+    --seed 42
 ```
 
-## Motion Detection
-
-### Overview
-
-**Task**: Classify movement vs no movement from WiFi time-series data  
-**Input**: WiFi signal time series (RSSI, SNR, signal strength over time)  
-**Output**: Binary classification (movement / no movement) with confidence score  
-**Features**: 9 statistical features extracted from 20-sample windows:
-- Mean, std, variance of RSSI, SNR, signal strength
-- Range (max - min) of RSSI
-- Mean absolute change of RSSI
-
-**Models**: Random Forest (default), Logistic Regression, SVM
-
-### How It Works
-
-1. **Data Collection**: Collects real-time WiFi signals (RSSI, SNR, signal strength) at 10 Hz sampling rate
-2. **Feature Extraction**: Extracts statistical features from sliding windows (20 samples = 2 seconds)
-3. **Model Training**: Trains Random Forest classifier on labeled data (movement vs no movement)
-4. **Prediction**: Classifies new samples and outputs confidence scores
-
-### Data Collection
+### `scripts/extract_features.py`
+Extract statistical features from processed windows.
 
 ```bash
-# Interactive mode (asks for movement label)
-python scripts/collect_time_series_data.py \
-    --location room1 \
-    --interactive \
-    --duration 60 \
-    --sampling_rate 10
-
-# Collect with movement label
-python scripts/collect_time_series_data.py \
-    --location room1 \
-    --movement \
-    --duration 60
-
-# Collect without movement label
-python scripts/collect_time_series_data.py \
-    --location room1 \
-    --no_movement \
-    --duration 60
+python scripts/extract_features.py \
+    --windows-dir data/processed/windows \
+    --output-dir data/processed/features
 ```
 
-**Parameters:**
-- `--location`: Location name (e.g., "room1", "office")
-- `--interactive`: Interactive mode (asks for movement label)
-- `--movement`: Label data as "movement"
-- `--no_movement`: Label data as "no movement"
-- `--duration`: Collection duration in seconds (default: 60)
-- `--sampling_rate`: Sampling rate in Hz (default: 10.0)
-
-### Training
+### `scripts/inspect_wiar.py`
+Inspect WiAR dataset structure and sample files.
 
 ```bash
-# Train on collected data
-python scripts/train_motion_detector.py \
-    --data_paths data/room1/time_series/*.json \
-    --model_type random_forest \
-    --window_size 20 \
-    --output_dir checkpoints
-
-# Model types: random_forest, logistic, svm
-# Window size: Number of samples per window (default: 20)
-```
-
-**Output:**
-- `checkpoints/motion_detector_*.pkl`: Trained model
-- `checkpoints/motion_detector_*_scaler.pkl`: Feature scaler
-- `checkpoints/motion_detector_*_metrics.json`: Performance metrics
-
-### Live Prediction
-
-```bash
-# Real-time motion detection
-python scripts/live_prediction.py
-```
-
-**Output:**
-- Real-time predictions every 0.1 seconds (10 Hz)
-- Confidence scores for each prediction
-- RSSI and SNR values
-
-### Visualization
-
-```bash
-# Generate time-series plot with motion regions
-python scripts/visualize_motion_detection.py \
-    --data_path data/room1/time_series/room1_movement_*.json \
-    --model_path checkpoints/motion_detector_random_forest.pkl \
-    --scaler_path checkpoints/motion_detector_random_forest_scaler.pkl \
-    --output visualizations/motion_detection_timeseries.png
-```
-
-**Outputs:**
-- **Confusion Matrix**: `visualizations/motion_detection_confusion_matrix.png`
-- **ROC Curve**: `visualizations/motion_detection_roc_curve.png`
-- **Time-Series Plot**: `visualizations/motion_detection_timeseries.png` (with motion regions highlighted)
-- **Metrics**: `checkpoints/motion_detector_*_metrics.json` (accuracy, precision, recall, F1, ROC AUC)
-
-### Model Performance
-
-Typical performance metrics:
-- **Accuracy**: 70-90% (depending on data quality and environment)
-- **Precision**: 0.7-0.9
-- **Recall**: 0.6-0.9
-- **F1 Score**: 0.7-0.9
-- **ROC AUC**: 0.7-0.95
-
-**Note**: Performance depends on:
-- WiFi router configuration (2.4GHz vs 5GHz)
-- Environmental factors (walls, furniture, interference)
-- Signal quality and noise levels
-- Data collection quality and labeling accuracy
-
-### Generate Synthetic Motion Data (for testing)
-
-```bash
-# Generate synthetic time-series data
-python scripts/generate_synthetic_motion_data.py \
-    --num_samples 2000 \
-    --sampling_rate 10.0 \
-    --movement_ratio 0.5 \
-    --output data/synthetic_motion_data.json
-```
-
-## Data Format
-
-Time-series data is stored in JSON format:
-
-```json
-{
-  "rssi": -65,
-  "snr": 30,
-  "signal_strength": 75,
-  "channel": 44,
-  "ssid": "MyWiFi",
-  "timestamp": "2025-01-15T10:00:00",
-  "unix_timestamp": 1705312800.0,
-  "movement": true,
-  "movement_label": 1,
-  "location": "room1",
-  "device_id": "macbook-pro",
-  "device_hostname": "MacBook-Pro",
-  "device_platform": "macOS"
-}
+python src/preprocess/inspect_wiar.py
 ```
 
 ## Requirements
 
 - Python 3.8+
-- NumPy, Pandas
+- NumPy, SciPy, Pandas
 - scikit-learn
+- PyTorch, torchvision
 - matplotlib, seaborn
-- joblib (for model saving)
+- csiread (for Intel 5300 .dat files)
+- jupyterlab (for notebooks)
+
+See `requirements.txt` for full list.
 
 ## Installation
 
@@ -248,33 +200,20 @@ Time-series data is stored in JSON format:
 pip install -r requirements.txt
 ```
 
-## Check Trained Models
+## Data Files
 
-```bash
-# Check which models are trained
-python scripts/check_trained_models.py
-```
+### Processed Data Location
 
-## Limitations
-
-1. **RSSI/SNR Only**: Currently uses RSSI and SNR, not full CSI (Channel State Information)
-2. **5GHz Limitations**: 5GHz signals have less penetration and multipath effects, making motion detection harder
-3. **Environmental Factors**: Performance depends on room layout, furniture, and interference
-4. **Labeling**: Requires manual labeling of movement vs no movement during data collection
-
-## Next Steps
-
-1. **Collect Real Data**: Collect more real-world data with accurate labels
-2. **Improve Features**: Add frequency-domain features (FFT) and more sophisticated feature engineering
-3. **Better Models**: Experiment with deep learning models (LSTM, CNN)
-4. **CSI Integration**: Integrate full CSI data if available from compatible hardware
-5. **Multi-Room Detection**: Extend to multiple rooms and locations
+- **Windows**: `data/processed/windows/window_*.npy`
+- **Labels**: `data/processed/windows/labels.csv`
+- **Features**: `data/processed/features/features.npy`
+- **Feature Labels**: `data/processed/features/labels.csv`
 
 ## References
 
-- Inspired by "Human Identification Using WiFi Signal" paper
-- WiFi CSI-Based motion detection research
-- Random Forest baseline for time-series classification
+- **WiAR Dataset**: Guo, L., et al. "A Novel Benchmark on Human Activity Recognition Using WiFi Signals" (IEEE Healthcom, 2017)
+- **Intel 5300 CSI Tool**: [dhalperi.github.io/linux-80211n-csitool](http://dhalperi.github.io/linux-80211n-csitool/)
+- **csiread Library**: Python library for parsing Intel 5300 CSI files
 
 ## License
 
