@@ -16,7 +16,7 @@ spatialaw/
 │   ├── fetch_wiar.sh              # Download WiAR dataset
 │   ├── generate_windows.py         # Process CSI recordings into windows
 │   ├── extract_features.py         # Extract statistical features
-│   └── train_motion_detector.py    # Train classifiers (legacy, to be updated)
+│   └── process_binary_dataset.py   # Combine datasets for binary classification
 ├── src/
 │   ├── preprocess/                 # Data preprocessing
 │   │   ├── csi_loader.py          # Load CSI files (.dat, .txt, .csv, .npy)
@@ -32,7 +32,9 @@ spatialaw/
 │       ├── windows/               # Processed CSI windows
 │       └── features/              # Extracted features
 ├── notebooks/
-│   └── visualize_samples.ipynb    # Visualize CSI windows
+│   ├── train_presence_detector.ipynb    # Train Random Forest model
+│   ├── visualize_activity_heatmap.ipynb # Activity detection visualization
+│   └── visualize_samples.ipynb           # Quick data inspection
 ├── tests/                          # Unit tests
 └── logs/                          # Training logs and checkpoints
 ```
