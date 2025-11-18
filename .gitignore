@@ -26,10 +26,11 @@ env/
 .ipynb_checkpoints
 *.ipynb
 
-# Data files
-data/raw/
-data/processed/
-data/external/
+# Data folders (large datasets + derived artifacts)
+data/
+.data/
+
+# Data files (when outside ignored folders)
 *.json
 *.npy
 *.mat
