@@ -31,10 +31,11 @@ spatialaw/
 │   └── processed/
 │       ├── windows/               # Processed CSI windows
 │       └── features/              # Extracted features
-├── notebooks/
-│   ├── train_presence_detector.ipynb    # Train Random Forest model
-│   ├── visualize_activity_heatmap.ipynb # Activity detection visualization
-│   └── visualize_samples.ipynb           # Quick data inspection
+├── model_tools/
+│   ├── train_presence_detector.py       # Train Random Forest model
+│   ├── visualize_activity_heatmap.py    # Activity detection visualization
+│   ├── visualize_samples.py             # Random CSI window viewer
+│   └── view_data.py                     # Raw .npy data inspection
 ├── tests/                          # Unit tests
 └── logs/                          # Training logs and checkpoints
 ```
@@ -73,6 +74,15 @@ python scripts/generate_windows.py \
 python scripts/extract_features.py \
     --windows-dir data/processed/windows \
     --output-dir data/processed/features
+
+# Combine activity + no-activity datasets (optional)
+python scripts/process_binary_dataset.py
+
+# Train Random Forest presence detector (runs end-to-end)
+python model_tools/train_presence_detector.py
+
+# Visualize predictions / heatmap
+python model_tools/visualize_activity_heatmap.py
 ```
 
 ## Dataset
@@ -176,11 +186,20 @@ python scripts/extract_features.py \
     --output-dir data/processed/features
 ```
 
-### `scripts/inspect_wiar.py`
-Inspect WiAR dataset structure and sample files.
+### `model_tools/*.py`
+Converted notebooks that can be run directly as Python scripts:
+
+| Script | Purpose |
+| --- | --- |
+| `model_tools/train_presence_detector.py` | Train + evaluate the Random Forest presence detector |
+| `model_tools/visualize_activity_heatmap.py` | Render CSI heatmap with prediction overlay |
+| `model_tools/visualize_samples.py` | Quickly view random windows as heatmaps |
+| `model_tools/view_data.py` | Print contents of `.npy` feature/window files |
+
+Run any of them with:
 
 ```bash
-python src/preprocess/inspect_wiar.py
+python model_tools/train_presence_detector.py
 ```
 
 ## Requirements
@@ -191,9 +210,9 @@ python src/preprocess/inspect_wiar.py
 - PyTorch, torchvision
 - matplotlib, seaborn
 - csiread (for Intel 5300 .dat files)
-- jupyterlab (for notebooks)
+- (Optional) jupyterlab — only needed if you plan to recreate notebooks
 
-See `requirements.txt` for full list.
+See `requirements.txt` for the complete list.
 
 ## Installation
 
