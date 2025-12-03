@@ -1,50 +1,96 @@
-# Spatial Awareness through Ambient Wireless Signals
+## Spatial Awareness through Ambient Wireless Signals
 
-Project by Rishabh (230178) and Shivansh (230054) - Newton School of Technology
+Project by Rishabh (230178) and Shivansh (230054) – Newton School of Technology  
+Course: Computer Networks + AI/ML
+
+---
 
 ## Overview
 
-WiFi-based human activity recognition system using Channel State Information (CSI) from the WiAR dataset. The system processes CSI signals to classify human activities in indoor environments.
+This project is a **WiFi-based human activity recognition (HAR) system** built on top of the **WiAR** dataset.  
+It uses **Channel State Information (CSI)** from standard **802.11n WiFi** to detect whether **human activity is present or not**.
 
-**Current Focus**: Binary classification (activity present vs no activity) with visualization.
+- **Computer Networks focus**:  
+  - Analyze **802.11n physical layer data** (CSI) from an Intel 5300 NIC  
+  - Parse binary CSI `.dat` files and treat them as **network traffic traces**  
+  - Study how the **wireless channel response** changes due to human motion (multipath)
+
+- **AI/ML focus**:  
+  - Convert CSI packet streams into fixed-length **windows**  
+  - Extract **14 statistical features** from each window  
+  - Train a **Random Forest binary classifier** for **activity vs no-activity**  
+  - Visualize results using **CSI heatmaps, probabilities, and confusion matrices**
+
+**Current status**: a working **binary presence detector** (activity vs no activity) with clear **network-signal visualizations** for presentations and demos.
+
+---
+
+## How this is a Computer Networks project
+
+- Works directly with **802.11n** WiFi, using:
+  - **OFDM subcarriers** (30 per channel)
+  - **MIMO** configuration (multiple antennas)
+  - **Physical layer (Layer 1)** channel estimates (CSI)
+- Uses the **Intel 5300 CSI Tool** to extract CSI from WiFi frames:
+  - Timestamp, RSSI, rate, antenna configuration, CSI matrix
+  - Parsed using the `csiread` Python library
+- Treats CSI as **network traffic**:
+  - Each CSI entry corresponds to a WiFi packet
+  - We perform **packet-level analysis** and **time-windowing** (like traffic analysis)
+- Applies **network signal processing**:
+  - Denoising and normalization (handling interference and level shifts)
+  - Channel statistics analogous to **SNR / channel quality metrics**
+
+You can describe it as:  
+**“Repurposing 802.11n physical-layer protocol data (CSI) for ambient sensing.”**
+
+---
 
 ## Project Structure
 
-```
+```text
 spatialaw/
 ├── scripts/
 │   ├── fetch_wiar.sh              # Download WiAR dataset
-│   ├── generate_windows.py         # Process CSI recordings into windows
-│   ├── extract_features.py         # Extract statistical features
-│   └── process_binary_dataset.py   # Combine datasets for binary classification
+│   ├── generate_windows.py        # Process CSI recordings into windows
+│   ├── extract_features.py        # Extract 14 statistical CSI features
+│   └── process_binary_dataset.py  # Build binary (activity / no-activity) dataset
 ├── src/
-│   ├── preprocess/                 # Data preprocessing
+│   ├── preprocess/                # Data loading & preprocessing
 │   │   ├── csi_loader.py          # Load CSI files (.dat, .txt, .csv, .npy)
-│   │   ├── dat_loader.py          # Intel 5300 .dat file parser
+│   │   ├── dat_loader.py          # Intel 5300 .dat file parser (uses csiread)
 │   │   ├── preprocess.py          # Windowing, denoising, normalization
 │   │   ├── features.py            # Feature extraction (14 CSI features)
-│   │   └── inspect_wiar.py        # Dataset inspection utility
+│   │   └── inspect_wiar.py        # Inspect WiAR recordings / metadata
 │   └── train/
-│       └── dataset.py             # PyTorch Dataset for CSI windows
-├── data/
-│   ├── raw/WiAR/                  # WiAR dataset (cloned from GitHub)
+│       └── dataset.py             # PyTorch Dataset for CSI windows (for future deep models)
+├── data/                          # Not tracked in git (.gitignore)
+│   ├── raw/
+│   │   └── WiAR/                  # Cloned WiAR dataset (original CSI recordings)
 │   └── processed/
-│       ├── windows/               # Processed CSI windows
-│       └── features/              # Extracted features
+│       ├── windows/               # Windowed CSI signals + labels
+│       ├── features/              # 14‑dim feature vectors (multi-class WiAR)
+│       └── binary/                # Binary presence dataset (activity / no-activity)
 ├── model_tools/
-│   ├── train_presence_detector.py       # Train Random Forest model
-│   ├── visualize_activity_heatmap.py    # Activity detection visualization
-│   ├── visualize_samples.py             # Random CSI window viewer
-│   └── view_data.py                     # Raw .npy data inspection
-├── tests/                          # Unit tests
-└── logs/                          # Training logs and checkpoints
+│   ├── train_presence_detector.py     # Train + evaluate Random Forest presence detector
+│   ├── visualize_activity_heatmap.py  # CSI heatmap with prediction overlay
+│   ├── visualize_samples.py           # Random CSI window viewer
+│   └── view_data.py                   # Inspect .npy feature/window files
+├── models/
+│   ├── presence_detector_rf.joblib        # Trained Random Forest model
+│   ├── presence_detector_scaler.joblib    # StandardScaler for features
+│   └── presence_detector_metrics.json     # Saved metrics & config
+├── tests/                           # Unit tests
+└── logs/                            # Training logs and checkpoints
 ```
 
 ## Quick Start
 
-### 1. Setup
+### 1. Setup Environment
 
 ```bash
+cd spatialaw
+
 # Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
@@ -56,34 +102,84 @@ pip install -r requirements.txt
 ### 2. Download WiAR Dataset
 
 ```bash
-# Clone WiAR dataset
+# Clone WiAR dataset into data/raw/WiAR
 ./scripts/fetch_wiar.sh
 ```
 
-### 3. Process Dataset
+> The `data/` folder is **git-ignored** to avoid committing large files.
+
+### 3. Process raw CSI into windows and features
 
 ```bash
-# Generate windows from raw CSI recordings
+# 1) Generate fixed-length windows from raw CSI recordings
 python scripts/generate_windows.py \
     --input-dir data/raw/WiAR \
     --out-dir data/processed/windows \
     --T 256 \
-    --stride 64
+    --stride 64 \
+    --seed 42
 
-# Extract features from windows
+# 2) Extract 14 CSI features from each window (multi-class WiAR)
 python scripts/extract_features.py \
     --windows-dir data/processed/windows \
     --output-dir data/processed/features
+```
 
-# Combine activity + no-activity datasets (optional)
+### 4. Build the binary presence dataset
+
+```bash
 python scripts/process_binary_dataset.py
+```
 
-# Train Random Forest presence detector (runs end-to-end)
+This script:
+- Loads **activity** features from WiAR
+- Loads **no-activity** samples from an additional CSI dataset
+- Creates `data/processed/binary/` with:
+  - `features.npy` – feature matrix for binary classification
+  - `labels.csv` – labels (`0` = no activity, `1` = activity)
+  - `feature_names.json` – names of the 14 features
+
+### 5. Train the presence detector (end-to-end)
+
+```bash
 python model_tools/train_presence_detector.py
+```
 
-# Visualize predictions / heatmap
+This script:
+- Loads binary dataset from `data/processed/binary/`
+- Splits into **80% train / 20% test** (stratified)
+- Scales features with `StandardScaler`
+- Trains a **RandomForestClassifier** with `class_weight='balanced'`
+- Prints metrics (accuracy, precision, recall, F1, ROC‑AUC)
+- Shows:
+  - Confusion matrix
+  - ROC curve
+  - Feature importance
+  - Prediction probability distribution
+- Saves:
+  - `models/presence_detector_rf.joblib`
+  - `models/presence_detector_scaler.joblib`
+  - `models/presence_detector_metrics.json`
+
+### 6. Visualize activity over time (heatmaps)
+
+```bash
 python model_tools/visualize_activity_heatmap.py
 ```
+
+This script:
+- Loads a CSI recording and its windows
+- Applies the trained model to every window
+- Plots:
+  1. **CSI heatmap** (subcarriers × time) with activity overlay
+  2. **Activity probability vs time**
+  3. **Binary predictions vs time**
+
+Perfect for **demo videos** or **class presentations**.
+
+---
+
+---
 
 ## Dataset
 
@@ -113,14 +209,32 @@ python model_tools/visualize_activity_heatmap.py
 15. sit_down
 16. squat
 
-### Current Dataset Statistics
+### Current Dataset Statistics (Multi-Class WiAR)
 
-- **Total Windows**: 2,092
-- **Features per Window**: 14 CSI statistical features
-- **Feature Matrix**: `(2092, 14)` saved as `data/processed/features/features.npy`
-- **Labels**: Activity IDs 0-15 (0-indexed) mapped to 16 activities
+- **Total Windows**: 2,092  
+- **Features per Window**: 14 CSI statistical features  
+- **Feature Matrix**: `data/processed/features/features.npy` with shape `(2092, 14)`  
+- **Labels**: `data/processed/features/labels.csv` (IDs 0–15 mapped to 16 activities)
 
-## Data Processing Pipeline
+### Binary Presence Dataset (Final Training Data)
+
+Built by `scripts/process_binary_dataset.py` (WiAR-only):
+
+- **Label 1 (Movement)**:
+  - WiAR windows whose motion score (variance + velocity) is above a threshold
+- **Label 0 (No / Low Movement)**:
+  - WiAR windows in the bottom `motion_quantile` (default 25%) of motion scores
+
+Outputs:
+- `data/processed/binary/features.npy` – WiAR-only features with motion-leakage features removed
+- `data/processed/binary/labels.csv` – derived binary labels with motion scores
+- `data/processed/binary/feature_names.json`
+
+---
+
+---
+
+## Data processing pipeline (end to end)
 
 ### 1. CSI Loading
 - Supports multiple formats: `.dat` (Intel 5300), `.txt`, `.csv`, `.npy`
@@ -139,29 +253,39 @@ python model_tools/visualize_activity_heatmap.py
 - **Standardization**: Handles variable packet/subcarrier counts
 
 ### 4. Feature Extraction
-Extracts 14 statistical features from each window:
+
+Implemented in `src/preprocess/features.py` and used by `scripts/extract_features.py`.
+
+From each window, it extracts 14 statistical CSI features, including:
 - CSI variance (mean, std, max)
-- CSI envelope (Hilbert transform)
+- Envelope statistics (Hilbert transform)
 - Signal entropy
 - Velocity of change (first derivative)
 - Median Absolute Deviation (MAD)
 - Motion period (dominant frequency via FFT)
 - Normalized standard deviation
 
-## Current Task: Binary Classification
+Result:
+- `data/processed/features/features.npy` – `(n_windows, 14)`
+- `data/processed/features/labels.csv` – multiclass WiAR labels
 
-**Goal**: Classify "activity present" (1) vs "no activity" (0)
+### 5. Binary Fusion & Model Training
 
-### Next Steps
+1. **Binary fusion** – `scripts/process_binary_dataset.py`  
+   Combines:
+   - All **activity windows** → label `1`
+   - **No-activity windows** → label `0`  
+   and writes the final binary dataset under `data/processed/binary/`.
 
-1. **Relabel Data**: Convert 16-class labels → binary (all activities → 1)
-2. **Create "No Activity" Samples**: Generate baseline/idle samples (label → 0)
-3. **Train Binary Classifier**: SVM, Random Forest, Logistic Regression
-4. **Visualization**: 
-   - Confusion matrix
-   - ROC curve
-   - Time-series plot with activity regions highlighted
-   - Confidence scores
+2. **Model training** – `model_tools/train_presence_detector.py`  
+   - Loads binary features and labels  
+   - Splits into train/test, scales features  
+   - Trains **Random Forest** with class weighting  
+   - Evaluates and saves model + metrics
+
+---
+
+---
 
 ## Scripts
 
@@ -178,7 +302,7 @@ python scripts/generate_windows.py \
 ```
 
 ### `scripts/extract_features.py`
-Extract statistical features from processed windows.
+Extract 14 statistical CSI features from processed windows.
 
 ```bash
 python scripts/extract_features.py \
@@ -186,63 +310,82 @@ python scripts/extract_features.py \
     --output-dir data/processed/features
 ```
 
+### `scripts/process_binary_dataset.py`
+Build the final **binary presence dataset** (activity vs no-activity).
+
+```bash
+python scripts/process_binary_dataset.py
+```
+
 ### `model_tools/*.py`
-Converted notebooks that can be run directly as Python scripts:
+Python scripts (converted from notebooks) for training and visualization:
 
 | Script | Purpose |
 | --- | --- |
 | `model_tools/train_presence_detector.py` | Train + evaluate the Random Forest presence detector |
 | `model_tools/visualize_activity_heatmap.py` | Render CSI heatmap with prediction overlay |
-| `model_tools/visualize_samples.py` | Quickly view random windows as heatmaps |
+| `model_tools/visualize_samples.py` | View random CSI windows as heatmaps |
 | `model_tools/view_data.py` | Print contents of `.npy` feature/window files |
 
-Run any of them with:
+Run training with:
 
 ```bash
 python model_tools/train_presence_detector.py
 ```
 
+---
+
+---
+
 ## Requirements
 
 - Python 3.8+
-- NumPy, SciPy, Pandas
-- scikit-learn
-- PyTorch, torchvision
-- matplotlib, seaborn
-- csiread (for Intel 5300 .dat files)
-- (Optional) jupyterlab — only needed if you plan to recreate notebooks
+- **Core**: `numpy`, `scipy`, `pandas`
+- **ML**: `scikit-learn`
+- **Visualization**: `matplotlib`, `seaborn`
+- **CSI parsing**: `csiread` (for Intel 5300 `.dat` files)
+- **Optional**: `jupyterlab` (only if you want to recreate notebooks)
 
-See `requirements.txt` for the complete list.
+See `requirements.txt` for the complete list and versions.
 
-## Installation
+---
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
-```
+---
 
-## Data Files
+## Data files (summary)
 
-### Processed Data Location
+- **Windows**: `data/processed/windows/window_*.npy`  
+- **Window labels**: `data/processed/windows/labels.csv`  
+- **Multi-class features**: `data/processed/features/features.npy`  
+- **Multi-class labels**: `data/processed/features/labels.csv`  
+- **Binary features**: `data/processed/binary/features.npy`  
+- **Binary labels**: `data/processed/binary/labels.csv`
 
-- **Windows**: `data/processed/windows/window_*.npy`
-- **Labels**: `data/processed/windows/labels.csv`
-- **Features**: `data/processed/features/features.npy`
-- **Feature Labels**: `data/processed/features/labels.csv`
+---
+
+---
 
 ## References
 
-- **WiAR Dataset**: Guo, L., et al. "A Novel Benchmark on Human Activity Recognition Using WiFi Signals" (IEEE Healthcom, 2017)
-- **Intel 5300 CSI Tool**: [dhalperi.github.io/linux-80211n-csitool](http://dhalperi.github.io/linux-80211n-csitool/)
+- **WiAR Dataset**: Guo, L., et al. *"A Novel Benchmark on Human Activity Recognition Using WiFi Signals"* (IEEE Healthcom, 2017)
+- **Intel 5300 CSI Tool**: <http://dhalperi.github.io/linux-80211n-csitool/>
 - **csiread Library**: Python library for parsing Intel 5300 CSI files
+
+---
+
+---
 
 ## License
 
 [Your License Here]
 
+---
+
+---
+
 ## Authors
 
-- Rishabh (230178)
+- Rishabh (230178)  
 - Shivansh (230054)
 
 Newton School of Technology

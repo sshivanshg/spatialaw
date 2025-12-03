@@ -38,12 +38,21 @@ print(f"    Class 1 (Activity): {np.sum(y == 1)} samples ({100*np.sum(y==1)/len(
 
 
 # Split data and scale features
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit
 from sklearn.preprocessing import StandardScaler
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
+# Use recording / source ID to avoid leakage between train and test
+if "source" in labels_df.columns:
+    groups = labels_df["source"].values
+else:
+    # Fallback: each sample is its own group (equivalent to random split)
+    groups = np.arange(len(y))
+
+gss = GroupShuffleSplit(test_size=0.2, n_splits=1, random_state=42)
+train_idx, test_idx = next(gss.split(X, y, groups=groups))
+
+X_train, X_test = X[train_idx], X[test_idx]
+y_train, y_test = y[train_idx], y[test_idx]
 
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
