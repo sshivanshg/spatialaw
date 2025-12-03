@@ -62,6 +62,9 @@ spatialaw/
 │   │   ├── preprocess.py          # Windowing, denoising, normalization
 │   │   ├── features.py            # Feature extraction (14 CSI features)
 │   │   └── inspect_wiar.py        # Inspect WiAR recordings / metadata
+│   ├── models/
+│   │   ├── __init__.py            # Exposes motion detector helpers
+│   │   └── motion_detector.py     # Runtime wrapper for trained detector
 │   └── train/
 │       └── dataset.py             # PyTorch Dataset for CSI windows (for future deep models)
 ├── data/                          # Not tracked in git (.gitignore)
@@ -139,7 +142,23 @@ This script:
   - `labels.csv` – labels (`0` = no activity, `1` = activity)
   - `feature_names.json` – names of the 14 features
 
-### 5. Train the presence detector (end-to-end)
+### 5. Validate the binary dataset
+
+```bash
+python scripts/validate_binary_dataset.py
+```
+
+This generates `data/processed/binary/validation_report.json` with label distributions, motion-score percentiles, per-activity breakdowns, and a leakage check for the GroupShuffleSplit configuration.
+
+### 6. (Optional) Hyperparameter tuning
+
+```bash
+python model_tools/tune_presence_detector.py
+```
+
+This performs 5-fold GroupKFold cross-validation across several Random Forest configurations, saves the tuned model/scaler/pipeline under `models/`, and records leaderboard metrics in `models/tuning_results.json` plus `models/presence_detector_metrics.json`.
+
+### 7. Train the presence detector (end-to-end)
 
 ```bash
 python model_tools/train_presence_detector.py
@@ -161,7 +180,7 @@ This script:
   - `models/presence_detector_scaler.joblib`
   - `models/presence_detector_metrics.json`
 
-### 6. Visualize activity over time (heatmaps)
+### 8. Visualize activity over time (heatmaps)
 
 ```bash
 python model_tools/visualize_activity_heatmap.py
@@ -176,6 +195,14 @@ This script:
   3. **Binary predictions vs time**
 
 Perfect for **demo videos** or **class presentations**.
+
+### 9. (Optional) Run the entire pipeline with one command
+
+```bash
+python scripts/run_pipeline.py
+```
+
+Use `--steps` to run a subset (e.g., `--steps validate tune`) and the other flags to override directories or hyperparameters.
 
 ---
 
@@ -325,6 +352,7 @@ Python scripts (converted from notebooks) for training and visualization:
 | `model_tools/train_presence_detector.py` | Train + evaluate the Random Forest presence detector |
 | `model_tools/visualize_activity_heatmap.py` | Render CSI heatmap with prediction overlay |
 | `model_tools/visualize_samples.py` | View random CSI windows as heatmaps |
+| `model_tools/live_predict.py` | Stream CSI windows and print live prediction probabilities |
 | `model_tools/view_data.py` | Print contents of `.npy` feature/window files |
 
 Run training with:
@@ -360,6 +388,14 @@ See `requirements.txt` for the complete list and versions.
 - **Multi-class labels**: `data/processed/features/labels.csv`  
 - **Binary features**: `data/processed/binary/features.npy`  
 - **Binary labels**: `data/processed/binary/labels.csv`
+
+## Quality reports & automation
+
+- **Dataset validation**: `data/processed/binary/validation_report.json` captures motion-score stats, per-activity label splits, and confirms train/test source separation.
+- **Model tuning leaderboard**: `models/tuning_results.json` logs every evaluated Random Forest configuration plus the selected winner; cross-validation means/std values are mirrored in `models/presence_detector_metrics.json`.
+- **Saved artifacts**: `models/presence_detector_rf.joblib`, `presence_detector_scaler.joblib`, and the combined `presence_detector_pipeline.joblib`.
+- **CI coverage**: `.github/workflows/ci.yml` installs dependencies and runs `pytest` (including the CLI integration tests) on every push/PR.
+- **End-to-end CLI**: `scripts/run_pipeline.py` chains all preprocessing/training stages with reproducible arguments.
 
 ---
 
