@@ -281,7 +281,10 @@ if window_data is not None and model is not None:
             plt.suptitle(f'Activity Detection Visualization: {source_name}', 
                         fontsize=16, fontweight='bold', y=0.98)
             plt.tight_layout(rect=[0, 0, 1, 0.97])
-            plt.show()
+            plot_path = MODELS_DIR / "activity_heatmap.png"
+            plt.savefig(plot_path)
+            print(f"✓ Visualization saved to: {plot_path}")
+            # plt.show()
         else:
             print("⚠️  Could not load window files for visualization")
     else:

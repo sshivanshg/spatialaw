@@ -248,12 +248,12 @@ Use `--steps` to run a subset (e.g., `--steps validate tune`) and the other flag
 Built by `scripts/process_binary_dataset.py` (WiAR-only):
 
 - **Label 1 (Movement)**:
-  - WiAR windows whose motion score (variance + velocity) is above a threshold
+  - All WiAR windows that are NOT classified as "no-activity".
 - **Label 0 (No / Low Movement)**:
-  - WiAR windows in the bottom `motion_quantile` (default 25%) of motion scores
+  - WiAR windows from **low-motion activities** (excluding high-intensity actions like walking) that fall in the bottom `motion_quantile` (default 25%) of motion scores.
 
 Outputs:
-- `data/processed/binary/features.npy` – WiAR-only features with motion-leakage features removed
+- `data/processed/binary/features.npy` – WiAR-only features
 - `data/processed/binary/labels.csv` – derived binary labels with motion scores
 - `data/processed/binary/feature_names.json`
 

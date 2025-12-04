@@ -158,7 +158,13 @@ axes[1, 1].axvline(x=0.5, color='black', linestyle='--', linewidth=1, label='Dec
 axes[1, 1].legend()
 
 plt.tight_layout()
-plt.show()
+output_dir = Path("models")
+output_dir.mkdir(exist_ok=True)
+
+plot_path = output_dir / "training_results.png"
+plt.savefig(plot_path)
+print(f"✓ Training plots saved to: {plot_path}")
+# plt.show()
 
 
 # Save model and scaler
