@@ -70,9 +70,9 @@ def load_data():
     return windows, binary_labels, np.array(groups)
 
 # --- Model ---
-class SimpleCNN(nn.Module):
+class CNN(nn.Module):
     def __init__(self, input_channels=60, num_classes=2):
-        super(SimpleCNN, self).__init__()
+        super(CNN, self).__init__()
         self.conv1 = nn.Conv1d(in_channels=input_channels, out_channels=32, kernel_size=7, padding=3)
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool1d(kernel_size=2)
@@ -122,7 +122,7 @@ def train():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Training on {device}")
     
-    model = SimpleCNN(input_channels=input_channels).to(device)
+    model = CNN(input_channels=input_channels).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     

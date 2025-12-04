@@ -79,9 +79,9 @@ def load_cnn_model(model_dir_path):
         import torch.nn as nn
         
         # Define Architecture (Must match training script)
-        class SimpleCNN(nn.Module):
+        class CNN(nn.Module):
             def __init__(self, input_channels=60, num_classes=2):
-                super(SimpleCNN, self).__init__()
+                super(CNN, self).__init__()
                 self.conv1 = nn.Conv1d(in_channels=input_channels, out_channels=32, kernel_size=7, padding=3)
                 self.relu1 = nn.ReLU()
                 self.pool1 = nn.MaxPool1d(kernel_size=2)
@@ -108,7 +108,7 @@ def load_cnn_model(model_dir_path):
         
         checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
         input_channels = checkpoint.get('input_channels', 60)
-        model = SimpleCNN(input_channels=input_channels)
+        model = CNN(input_channels=input_channels)
         model.load_state_dict(checkpoint['model_state_dict'])
         model.eval()
         return model, None
