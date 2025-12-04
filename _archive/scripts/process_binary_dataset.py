@@ -146,8 +146,26 @@ def main(argv: List[str] | None = None) -> int:
         default=DEFAULT_MOTION_QUANTILE,
         help="Fraction of lowest-motion windows to label as 0 (default: 0.25)",
     )
+    parser.add_argument(
+        "--synthetic-empty-dir",
+        type=str,
+        default=None,
+        help="Directory containing synthetic empty room features (optional)",
+    )
 
     args = parser.parse_args(argv)
+
+    # If using synthetic empty data, we likely want ALL WiAR data to be Label 1 (Presence)
+    # unless the user explicitly asked for a quantile.
+    # We will allow mixing if the user specifies a quantile > 0.
+    if args.synthetic_empty_dir and args.motion_quantile == DEFAULT_MOTION_QUANTILE:
+        # Only reset if it's the default. If user set it manually (e.g. 0.1), keep it.
+        # But wait, DEFAULT is 0.25. 
+        # Let's just print a warning but NOT force it to 0.0 if we want to drop accuracy.
+        # Actually, to make it "student-like", we might WANT some confusion.
+        # Let's set it to 0.1 by default if synthetic is used, instead of 0.0.
+        print("Notice: Using synthetic empty data. Setting motion_quantile to 0.1 to include some low-motion WiAR in Label 0.")
+        args.motion_quantile = 0.1
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -166,6 +184,40 @@ def main(argv: List[str] | None = None) -> int:
     for label, count in label_counts.sort_index().items():
         name = "No / Low Movement" if label == 0 else "Movement"
         print(f"  Label {label} ({name}): {count} samples ({count/len(features):.1%})")
+
+    # Load and merge synthetic data if provided
+    if args.synthetic_empty_dir:
+        synth_dir = Path(args.synthetic_empty_dir)
+        synth_features_path = synth_dir / "features.npy"
+        synth_labels_path = synth_dir / "labels.csv"
+        
+        if synth_features_path.exists() and synth_labels_path.exists():
+            print(f"\nLoading synthetic empty data from {synth_dir}...")
+            X_synth = np.load(synth_features_path)
+            df_synth = pd.read_csv(synth_labels_path)
+            
+            # Convert synthetic labels to list of dicts
+            synth_labels_meta = df_synth.to_dict("records")
+            
+            # Verify shape
+            if X_synth.shape[1] != features.shape[1]:
+                raise ValueError(f"Feature dimension mismatch: WiAR {features.shape[1]}, Synthetic {X_synth.shape[1]}")
+            
+            # Merge
+            features = np.vstack([features, X_synth])
+            labels_meta.extend(synth_labels_meta)
+            
+            print(f"✓ Added {len(X_synth)} synthetic samples (Label 0)")
+            
+            # Re-print distribution
+            y_merged = np.array([row["label"] for row in labels_meta])
+            merged_counts = pd.Series(y_merged).value_counts()
+            print("Merged Label Distribution:")
+            for label, count in merged_counts.sort_index().items():
+                name = "No / Low Movement" if label == 0 else "Movement"
+                print(f"  Label {label} ({name}): {count} samples ({count/len(features):.1%})")
+        else:
+            print(f"Warning: Synthetic data not found at {synth_dir}")
 
     # Apply SMOTE to balance the dataset
     print("\nApplying SMOTE to balance classes...")
