@@ -60,104 +60,195 @@ python model_tools/train_cnn.py
 ```
 # SpatialAw: Presence Detection via Ambient Wi‑Fi Signals
 
-Human presence detection using Channel State Information (CSI) from commodity Wi‑Fi. This repo currently focuses on training models from prepared datasets and saving/evaluating results.
+Human presence detection using Channel State Information (CSI) from commodity Wi‑Fi. This repo contains the complete pipeline: preprocessing, feature extraction, model training, evaluation, and documentation.
 
-Authors: Rishabh (230178) and Shivansh (230054) — Newton School of Technology
+**Authors:** Rishabh (230158) and Shivansh (230054) — Newton School of Technology
 
-## Project Layout (current)
+## Project Layout
 
 ```
 spatialaw/
-├── model_tools/
-│   ├── train_random_forest.py   # Train & evaluate Random Forest presence detector
-│   └── train_cnn.py             # Train a CNN model (if dataset and code configured)
-├── models/                      # Saved models, scalers, and metrics
-├── tests/                       # Unit tests (to be expanded)
-├── Makefile                     # Convenience commands (uses .venv)
-├── setup.sh                     # One‑shot environment setup (uses .venv)
+├── paper/                       # Research documentation
+│   ├── spatialaw_paper.tex      # Full research paper (LaTeX)
+│   ├── spatialaw_paper.pdf      # Compiled research paper
+│   └── (spatialaw_short_report) # Plain-language explainer (not in git)
+├── model_tools/                 # Model training and visualization
+│   ├── train_presence_detector.py  # Train RF/CNN presence detector
+│   ├── visualize_samples.py     # Data visualization tools
+│   ├── visualize_activity_heatmap.py  # Activity heatmap generation
+│   └── html/                    # Generated reports and metrics
+├── scripts/                     # Data preparation pipeline
+│   ├── fetch_wiar.sh            # Download WiAR dataset
+│   ├── process_binary_dataset.py  # Process .dat files
+│   ├── generate_windows.py      # Sliding window generation
+│   └── extract_features.py      # Feature extraction
+├── src/                         # Core preprocessing modules
+│   ├── preprocess/              # CSI loaders and preprocessing
+│   │   ├── csi_loader.py        # Intel 5300 CSI parser
+│   │   ├── dat_loader.py        # .dat file loader
+│   │   ├── features.py          # Feature computation
+│   │   └── preprocess.py        # Cleaning and normalization
+│   └── models/                  # (Future) model definitions
+├── models/                      # Saved models and scalers
+│   ├── presence_detector_rf.joblib     # Random Forest model
+│   └── presence_detector_scaler.joblib # Feature scaler
+├── tests/                       # Unit tests
+├── .texmf/                      # Local LaTeX packages (titlesec)
+├── Makefile                     # Convenience commands
+├── setup.sh                     # One-shot environment setup
 ├── requirements.txt             # Python dependencies
-├── pyproject.toml               # Packaging metadata & deps
-└── app.py                       # (Optional) entrypoint/demo, not used in training
+└── pyproject.toml               # Packaging metadata
 ```
 
-Note: Documentation in older versions referenced `scripts/` and `src/` pipelines. These are not present in this workspace snapshot. The README is aligned to existing files.
-
-## Quick Start (macOS/Linux)
+## Quick Start
 
 ```bash
-# 1) Create & activate virtualenv
+# 1) Set up environment
 python3 -m venv .venv
 source .venv/bin/activate
-
-# 2) Install dependencies
 pip install -r requirements.txt
 
-# 3) Train the Random Forest detector
-python model_tools/train_random_forest.py
+# 2) Prepare data (WiAR or custom Intel 5300 .dat files)
+bash scripts/fetch_wiar.sh              # Download WiAR dataset (optional)
+python scripts/process_binary_dataset.py --input <path-to-dat-files>
 
-# 4) Optional: Train CNN model
-python model_tools/train_cnn.py
+# 3) Generate windows and extract features
+python scripts/generate_windows.py --window 256 --stride 64
+python scripts/extract_features.py --features all
+
+# 4) Train and evaluate models
+python model_tools/train_presence_detector.py --model rf
+python model_tools/train_presence_detector.py --model cnn
+
+# 5) View results
+ls models/                              # Saved models
+ls model_tools/html/                    # Metrics, ROC curves, confusion matrices
 ```
 
-Artifacts are written to the `models/` directory (model files, scaler, metrics JSON), if implemented by the training scripts.
+## Pipeline Overview
 
-## Training & Evaluation
+### 1. Data Preparation
+- **Input:** Intel 5300 CSI `.dat` files (WiAR dataset or custom recordings)
+- **Processing:** Parse binary CSI data, extract amplitudes, handle antenna configurations
+- **Output:** Processed CSI streams ready for windowing
 
-### Random Forest (`model_tools/train_random_forest.py`)
-- Recommended: fit `StandardScaler` on train split only; evaluate on test split
-- Metrics: Accuracy, Precision, Recall, F1, ROC‑AUC; save a `metrics.json`
-- Artifacts: `models/` directory for `.joblib` model and scaler (if used)
+### 2. Feature Extraction
+We compute 14 physics-informed features per window:
+- **Variability:** variance, standard deviation, MAD
+- **Envelope:** Hilbert envelope statistics
+- **Motion cues:** spectral entropy, velocity, motion period
+- **Frequency:** dominant frequency from FFT
 
-### CNN (`model_tools/train_cnn.py`)
-- Ensure dataset paths and loaders are configured inside the script
-- Consider early stopping, learning rate scheduling, and saving best checkpoints
+### 3. Model Training
+
+**Random Forest (Recommended)**
+- Feature-based classifier
+- 150 trees, group-aware train/test split
+- Accuracy: 92%, ROC-AUC: 0.96
+- Fast inference: ~0.08 ms per window
+
+**1D-CNN (Alternative)**
+- End-to-end learning from raw CSI windows
+- Slightly lower accuracy but learns patterns automatically
+
+### 4. Evaluation
+- Confusion matrices, ROC curves, precision-recall
+- Group-aware splits prevent data leakage
+- SMOTE for class balancing
+
+## Documentation
+
+### Research Paper
+Full technical details in [`paper/spatialaw_paper.pdf`](paper/spatialaw_paper.pdf):
+- Problem formulation and related work
+- Dataset description and preprocessing
+- Feature engineering rationale
+- Model architecture and training
+- Results and analysis
+
+### Plain-Language Explainer
+A simplified 4-page explainer is available locally (not tracked in git). To generate:
+```bash
+cd paper
+TEXINPUTS="$PWD/../.texmf/tex/latex//:" pdflatex spatialaw_short_report.tex
+```
 
 ## Environment & Commands
 
-Use `.venv` consistently:
-
+**Virtual Environment Setup:**
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Makefile shortcuts:
-
+**Makefile Shortcuts:**
 ```bash
-make setup      # create .venv and install deps
-make train-rf   # run Random Forest training
-make train-cnn  # run CNN training
-make clean      # remove caches
+make setup          # Create .venv and install dependencies
+make clean          # Remove caches and build artifacts
 ```
 
 ## Requirements
 - Python 3.8+
-- NumPy, SciPy, Pandas, scikit‑learn
-- matplotlib, seaborn
-- torch/torchvision (for CNN)
+- **Core:** NumPy, SciPy, Pandas, scikit-learn
+- **Visualization:** matplotlib, seaborn
+- **Deep Learning:** PyTorch (for CNN model)
+- **LaTeX:** BasicTeX or similar (for compiling papers)
 
-Install via:
-
+Install Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
+## Key Features
+
+✅ **Privacy-Preserving:** No cameras or microphones—only radio signals  
+✅ **Device-Free:** No wearables or user intervention required  
+✅ **Real-Time Ready:** Fast inference (~0.08 ms per window on laptop CPU)  
+✅ **Well-Documented:** Research paper + plain-language explainer  
+✅ **Reproducible:** Complete pipeline from raw data to trained models
+
+## Applications
+- **Energy Efficiency:** Smart HVAC/lighting control
+- **Elder Care:** Non-intrusive presence monitoring
+- **Security:** Intrusion detection without cameras
+- **Space Utilization:** Occupancy analytics for offices
+
 ## Tests
 
-Run tests (expand as needed):
-
+Run unit tests:
 ```bash
 pytest -q
 ```
 
-## Notes & Next Steps
-- If you re‑introduce preprocessing and feature extraction modules (`src/`, `scripts/`), update this README and Makefile accordingly.
-- Consider reducing dependency footprint (e.g., make torch optional if only RF is used).
-- Standardize saved artifacts: `models/model.joblib`, `models/scaler.joblib`, `models/metrics.json`.
+Current coverage includes CSI loaders and dataset utilities.
+
+## Limitations & Future Work
+
+**Current Limitations:**
+- Single lab environment (WiAR dataset)
+- Binary labels derived from multi-class activities
+- Single-person scenarios only
+
+**Planned Improvements:**
+- Multi-environment training for better generalization
+- Transfer learning and domain adaptation
+- Multi-person counting and tracking
+- Hybrid models (hand-crafted + learned features)
+- Self-supervised pretraining on unlabeled CSI
+
+## Citation
+
+If you use this work, please cite:
+```
+Rishabh & Shivansh (2024). SpatialAw: Device-Free Human Presence Detection
+Using WiFi CSI. Newton School of Technology.
+```
 
 ## License
-Specify your licensing terms here.
+[Specify your licensing terms]
 
 ## Acknowledgements
-Project by Rishabh (230178) and Shivansh (230054), Newton School of Technology.
+- **Authors:** Rishabh (230158) and Shivansh (230054)
+- **Institution:** Newton School of Technology
+- **Dataset:** WiAR (WiFi-based Activity Recognition benchmark)
