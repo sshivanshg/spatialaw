@@ -7,6 +7,7 @@ import pandas as pd
 from pathlib import Path
 from sklearn.model_selection import GroupShuffleSplit
 import json
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score
 
 # --- Configuration ---
 DATA_DIR = Path("data/processed/windows")
@@ -127,6 +128,7 @@ def train():
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     
     # Loop
+    train_losses = []
     for epoch in range(EPOCHS):
         model.train()
         running_loss = 0.0
@@ -146,22 +148,27 @@ def train():
             _, predicted = torch.max(outputs.data, 1)
             total += targets.size(0)
             correct += (predicted == targets).sum().item()
-            
-        print(f"Epoch {epoch+1}/{EPOCHS} - Loss: {running_loss/len(train_loader):.4f} - Acc: {100*correct/total:.2f}%")
+        epoch_loss = running_loss/len(train_loader) if len(train_loader) > 0 else 0.0
+        train_losses.append(epoch_loss)
+        print(f"Epoch {epoch+1}/{EPOCHS} - Loss: {epoch_loss:.4f} - Acc: {100*correct/total:.2f}%")
         
     # Evaluate
     model.eval()
-    correct = 0
-    total = 0
+    all_preds = []
+    all_targets = []
     with torch.no_grad():
         for inputs, targets in test_loader:
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = model(inputs)
             _, predicted = torch.max(outputs.data, 1)
-            total += targets.size(0)
-            correct += (predicted == targets).sum().item()
-            
-    print(f"Test Accuracy: {100*correct/total:.2f}%")
+            all_preds.append(predicted.cpu())
+            all_targets.append(targets.cpu())
+
+    all_preds = torch.cat(all_preds).numpy()
+    all_targets = torch.cat(all_targets).numpy()
+    test_acc = accuracy_score(all_targets, all_preds)
+    precision, recall, f1, _ = precision_recall_fscore_support(all_targets, all_preds, average='binary', zero_division=0)
+    print(f"Test Accuracy: {100*test_acc:.2f}% | Precision: {precision:.3f} | Recall: {recall:.3f} | F1: {f1:.3f}")
     
     # Save
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
@@ -170,6 +177,22 @@ def train():
         'input_channels': input_channels
     }, MODEL_PATH)
     print(f"Model saved to {MODEL_PATH}")
+
+    # Save metrics
+    metrics_path = MODEL_DIR / "presence_detector_cnn_metrics.json"
+    with open(metrics_path, "w") as f:
+        json.dump({
+            "epochs": EPOCHS,
+            "learning_rate": LEARNING_RATE,
+            "batch_size": BATCH_SIZE,
+            "input_channels": int(input_channels),
+            "train_losses": [float(x) for x in train_losses],
+            "test_accuracy": float(test_acc),
+            "test_precision": float(precision),
+            "test_recall": float(recall),
+            "test_f1": float(f1),
+        }, f, indent=2)
+    print(f"Metrics saved to {metrics_path}")
 
 if __name__ == "__main__":
     train()
