@@ -114,6 +114,6 @@ data/
 - csiread library: <https://github.com/citywu/csiread>
 
 ## Authors
-- Rishabh (230178)
+- Rishabh (230158)
 - Shivansh (230054)
 Newton School of Technology — Computer Networks + AI/ML Capstone
