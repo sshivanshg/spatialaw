@@ -101,7 +101,21 @@ if uploaded_file is not None:
                 if csi.shape[0] in [30, 60] and csi.shape[1] > 256:
                     csi = csi.T
                 
-                windows = window_csi(csi, T=256, stride=64)
+                
+                # Pad if shorter than required window size
+                window_size = 256
+                stride = 64
+                
+                if csi.shape[0] < window_size:
+                    # Pad with last value to reach required length
+                    pad_len = window_size - csi.shape[0]
+                    # Assuming csi is (Time, Subcarriers)
+                    csi = np.pad(csi, ((0, pad_len), (0, 0)), mode='edge')
+                    # Update metrics to reflect padding
+                    st.toast(f"Note: File too short ({csi.shape[0]-pad_len}), padded to {window_size} samples.", icon="ℹ️")
+
+                # Generate windows
+                windows = window_csi(csi, T=window_size, stride=stride)
             
             if len(windows) == 0:
                 st.error(f"File is too short to generate windows. Shape: {csi.shape}, Required: {256} samples.")
