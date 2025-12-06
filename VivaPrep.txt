@@ -1,0 +1,131 @@
+Spatial Awareness Project – Viva Preparation Notes
+=================================================
+
+Project elevator pitch
+----------------------
+- Goal: Detect human presence in a room using WiFi Channel State Information (CSI) from the WiAR dataset (Intel 5300 NIC captures).
+- Approach: Convert CSI packet streams into fixed-length windows, engineer features or feed raw tensors into models, and classify “activity present” vs “no activity”.
+- Deliverables: Reproducible preprocessing scripts, RandomForest baseline, CNN-based detector, trained artifacts, notebook walkthrough, and plans for a Streamlit dashboard.
+
+Dataset essentials
+------------------
+- Source: WiAR (Guo et al., IEEE Healthcom 2017). 16 activities, ~10 volunteers, captured at 30 Hz with 3 antennas.
+- Raw layout: `data/raw/WiAR` contains CSI `.dat` files, text matrices, Matlab readers, volunteer archives, demo videos, and papers.
+- Summary stats: 2,040 files (~1.9 GB), 1,932 recording files; enumerated in `data/processed/dataset_summary.json`.
+- Activities include waves, kicks, sit/stand, phone call, etc. Each `csi_a{activity}_{sample}.dat` encodes one recording.
+
+Preprocessing pipeline
+----------------------
+1. Windowing (`_archive/scripts/generate_windows.py`)
+   - Inputs: raw CSI arrays `(packets × 30 subcarriers)`.
+   - Output: Overlapping windows `(30 × 256)` with stride 64, denoised and z-score normalized. Metadata written to `data/processed/windows/labels.csv`.
+
+2. Feature extraction (`_archive/scripts/extract_features.py`)
+   - 14 handcrafted statistics (variance, entropy, Hilbert envelope, motion period, velocity, MAD, normalized std).
+   - Products: `data/processed/features/features.npy`, `labels.csv`, `feature_extraction_summary.json`.
+
+3. Binary dataset (`_archive/scripts/process_binary_dataset.py`)
+   - Maps multiple activities to two classes (presence vs low motion) for the RandomForest baseline.
+   - Extra validation via `validate_binary_dataset.py`.
+
+4. Synthetic class-0 boost for CNN
+   - `prepare_presence_windows.py`: Computes motion scores (mean absolute derivative) for every window, labels below a quantile as class 0, others as class 1, and creates train/val/test splits.
+   - `generate_synthetic_low_motion_windows.py`: Augments low-motion windows with jitter/noise to reach 1,000 extra “empty-room” samples, balancing class 0 before training.
+   - Final counts: 3,092 windows, label distribution 0:1,426 vs 1:1,666 with stratified splits (train 2,164, val 464, test 464). Logged in `presence_windows_summary.json`.
+
+Modeling overview
+-----------------
+RandomForest baseline
+- Script: `_archive/model_tools/train_presence_detector.py`.
+- Features: uses the 14 engineered statistics.
+- Training: StandardScaler + RandomForestClassifier (class_weight=balanced), evaluated with accuracy, precision, recall, F1, ROC-AUC.
+- Artifacts: `models/presence_detector_rf.joblib`, `presence_detector_scaler.joblib`, `presence_detector_pipeline.joblib`, plus metrics JSON.
+- Visualization helpers: `visualize_activity_heatmap.py`, `visualize_samples.py`, `live_predict.py`, etc., reside in `_archive/model_tools/`.
+
+CNN presence detector
+- Script: `_archive/model_tools/train_presence_cnn.py`.
+- Data: raw CSI windows from `data/processed/windows`, labels from `windows_binary/train|val|test.csv`.
+- Architecture: 3 conv blocks (1→32→64→128 channels), BatchNorm + ReLU, pooling, global average pool, dropout, final linear layer. BCEWithLogits loss, Adam optimizer, ReduceLROnPlateau scheduler, early stopping.
+- Augmentations: handled inside `_archive/src/train/dataset.py` (noise, time crop, channel dropout) when `augment=True`.
+- Output: `models/presence_cnn.pt`, optional ONNX export, `presence_cnn_metrics.json` capturing per-epoch history and test set metrics.
+
+Notebook storyline (`Spatial_Awareness_Project.ipynb`)
+-----------------------------------------------------
+- Sections walk through raw CSI parsing (with csiread fallback), preprocessing, synthetic empty-room feature generation, RandomForest training, evaluation plots, and artifact export.
+- The notebook can be extended with the CNN training cells if needed for a single-file submission.
+
+Key scripts and their roles
+---------------------------
+- `_archive/scripts/*`: data download (`fetch_wiar.sh`), preprocessing pipeline (windowing, feature extraction, binary fusion, validation, synthetic generation, presence splits).
+- `_archive/model_tools/*`: training, tuning, visualization, live prediction.
+- `_archive/src/preprocess/*`: reusable functions for loading CSI, windowing, normalization, feature engineering.
+- `_archive/src/train/dataset.py`: PyTorch Dataset/DataLoader utilities for CSI windows, including augmentation config.
+- `setup.sh` & `requirements.txt`: environment bootstrapping (Python 3.11, numpy/pandas/sklearn/torch/csiread/streamlit to be added later).
+
+Testing and validation
+----------------------
+- Data integrity: `validate_binary_dataset.py` checks label distribution, motion percentiles, and leakage for the feature dataset. Presence windows script logs thresholding stats.
+- Model evaluation: both RandomForest and CNN scripts report accuracy/F1/ROC-AUC on held-out sets; confusion matrices and ROC curves available through notebook or plotting scripts.
+- No dedicated pytest suite for the new CNN yet; future work could wrap CLI scripts in regression tests.
+
+Streamlit dashboard plan (up next)
+----------------------------------
+- Inputs: real-time CSI windows (from live stream or folder watcher) or uploaded `.npy` windows.
+- Backend: reuse `_archive/src/preprocess` to normalize windows, load saved RandomForest or CNN, and stream predictions.
+- UI ideas: live probability gauge, history plot, threshold toggle, CSI heatmap per window, table of recent predictions.
+- Deployment: `streamlit_app.py`, `streamlit` + `watchdog` added to requirements, instructions to run `streamlit run streamlit_app.py`.
+
+Common viva questions & talking points
+--------------------------------------
+1. **Why WiFi CSI for presence detection?**
+   - Privacy-friendly (no camera), uses existing WiFi hardware, captures multipath variations caused by human motion.
+
+2. **How do you preprocess CSI data?**
+   - Convert packet streams to fixed windows (T=256, stride=64), denoise with moving average, per-window z-score normalization, optionally derive features.
+
+3. **How do you define “motion” vs “no motion”?**
+   - Motion score = mean absolute temporal derivative per window. Quantile thresholding or manually tuned cutoff distinguishes low-motion windows for class 0.
+
+4. **How did you handle class imbalance?**
+   - Motion quantile to carve out low-motion class, plus synthetic augmentation of class 0 windows with jitter/noise. For feature-based models we also generated synthetic empty-room feature vectors.
+
+5. **Why a CNN after RandomForest?**
+   - CNN sees raw spatiotemporal CSI patterns, capturing subtle correlations lost in engineered features. Offers better generalization once enough windows are available.
+
+6. **What challenges did you face?**
+   - Large raw dataset management (restoring WiAR folder), deriving realistic empty-room samples, keeping code modular for CLI + notebook workflows, ensuring reproducible splits.
+
+7. **How would you deploy this?**
+   - Bundle preprocessing + trained model into a Streamlit dashboard for visualization, or a lightweight service (e.g., FastAPI) that ingests CSI windows and outputs presence probabilities.
+
+8. **Future improvements?**
+   - Domain adaptation for different rooms, transfer learning with larger CSI datasets, edge deployment on WiFi routers, multi-person detection, integrating actual live CSI stream.
+
+Quick command reference
+-----------------------
+- Environment setup: `./setup.sh`
+- Generate windows: `python _archive/scripts/generate_windows.py`
+- Extract features: `python _archive/scripts/extract_features.py`
+- Create binary feature dataset: `python _archive/scripts/process_binary_dataset.py`
+- Validate dataset: `python _archive/scripts/validate_binary_dataset.py`
+- Prepare presence windows: `python _archive/scripts/prepare_presence_windows.py --extra-labels-csv data/processed/windows_binary/synthetic_windows.csv`
+- Train RandomForest: `python _archive/model_tools/train_presence_detector.py`
+- Train CNN: `python _archive/model_tools/train_presence_cnn.py`
+- (Planned) Streamlit app: `streamlit run streamlit_app.py`
+
+Artifacts to mention in viva
+----------------------------
+- `Spatial_Awareness_Project.ipynb` – narrative report and baseline experiments.
+- `models/presence_detector_rf.joblib` & `presence_detector_scaler.joblib`.
+- `models/presence_cnn.pt` & `presence_cnn_metrics.json`.
+- `data/processed/windows_binary/presence_windows_summary.json` – proof of dataset balancing.
+- `_archive/model_tools/html/*.html` – rendered notebooks with visual evidence.
+
+Tips for presentation
+---------------------
+- Start with the privacy angle: WiFi as a sensor.
+- Show CSI heatmap + prediction overlay to make the model tangible.
+- Highlight both classical ML (RandomForest + engineered features) and deep learning (CNN on raw CSI).
+- Mention data challenges (lack of empty-room samples) and how synthetic augmentation solved it.
+- Outline Streamlit dashboard vision to show real-time potential.
+
