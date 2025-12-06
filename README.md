@@ -74,10 +74,12 @@ This repo turns the WiAR dataset (Intel 5300 CSI captures) into a binary **prese
 
 | Model | Command | Inputs | Artifacts |
 | --- | --- | --- | --- |
-| RandomForestClassifier | `python model_tools/train_random_forest.py` | `data/processed/binary/features.npy` + `labels.csv` | `models/presence_detector_rf.joblib`, `presence_detector_scaler.joblib`, `presence_detector_metrics.json`, plots under `models/` |
+| RandomForestClassifier | `python model_tools/train_random_forest.py` | `data/processed/windows_binary/all_windows.csv` via feature extraction | `models/presence_detector_rf.joblib`, `presence_detector_scaler.joblib`, `presence_detector_metrics.json`, plots under `models/` |
 | CNN (raw windows) | `python model_tools/train_cnn.py` (local helper) or `_archive/model_tools/train_presence_cnn.py` for advanced CLI | `data/processed/windows_binary/train/val/test.csv` + window tensors | `models/presence_detector_cnn.pth`, `presence_detector_cnn_metrics.json` |
 
 Both scripts print accuracy/precision/recall/F1/ROC-AUC and save metrics for reproducibility.
+
+"source .venv/bin/activate   " 
 
 ## Streamlit Dashboard
 ```bash
@@ -93,6 +95,17 @@ Features:
 - Simulated live mode that replays recorded CSI windows
 - Stability filter to smooth predictions
 - Probability timeline & current decision indicator
+- **Compatibility**: Requires input files in `.dat` (Intel 5300 binary) or `.npy` format.
+
+## Using Custom Data
+To test with your own recordings or new datasets:
+1.  **Hardware Requirement**: Data **must** be captured using an **Intel 5300 NIC** with the [Linux 802.11n CSI Tool](http://dhalperi.github.io/linux-80211n-csitool/).
+    *   *Why?* The model is trained on 30 subcarriers. Other cards (Atheros, ESP32, AX210) produce different shapes (56, 64, 256 subcarriers) and will not work.
+2.  **Format**: Save the raw output as a `.dat` file.
+3.  **Testing**:
+    *   Open the Dashboard (`streamlit run app.py`).
+    *   Drag & drop your `.dat` file.
+    *   The app automatically handles windowing, partial denoising, and normalization.
 
 ## Notebook Workflow
 - `Spatial_Awareness_Project.ipynb` mirrors the CLI pipeline but in a single report: parsing `csiread`, windowing/feature extraction, synthetic empty-room generation, RandomForest training, and evaluation plots. Extend it with the CNN cells if you want a notebook-only submission.
