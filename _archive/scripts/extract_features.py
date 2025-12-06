@@ -42,7 +42,12 @@ def parse_args(argv: List[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--windows-dir",
         default="data/processed/windows",
-        help="Directory containing processed windows and labels.csv",
+        help="Directory containing processes window .npy files",
+    )
+    parser.add_argument(
+        "--input-csv",
+        default=None,
+        help="Optional input CSV path (overrides default labels.csv search).",
     )
     parser.add_argument(
         "--output-dir",
@@ -66,14 +71,35 @@ def main(argv: List[str] | None = None) -> int:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    labels_path = windows_dir / "labels.csv"
-    if not labels_path.exists():
-        print(f"❌ Labels file not found: {labels_path}")
-        return 1
+    if args.input_csv:
+        labels_path = Path(args.input_csv)
+        if not labels_path.exists():
+            print(f"❌ Input CSV not found: {labels_path}")
+            return 1
+        labels_df = pd.read_csv(labels_path)
+        print(f"Loaded {len(labels_df)} samples from {labels_path}")
+        
+        # Map presence_label to label if attempting to align with CNN data
+        if "presence_label" in labels_df.columns:
+            print("Mapping 'presence_label' to 'label' for training...")
+            labels_df["label"] = labels_df["presence_label"].astype(int)
+        elif "label" in labels_df.columns:
+            # Auto-binarize if we see multi-class labels (like 0..16)
+            # This matches CNN logic: 0 is empty, >0 is presence
+            if labels_df["label"].max() > 1:
+                print("Binarizing multi-class labels (0->0, >0->1) to match CNN training...")
+                labels_df["label"] = labels_df["label"].apply(lambda x: 0 if x == 0 else 1)
+            
+    else:
+        labels_path = windows_dir / "labels.csv"
+        if not labels_path.exists():
+            print(f"❌ Labels file not found: {labels_path}")
+            return 1
 
-    labels_df = pd.read_csv(labels_path)
+        labels_df = pd.read_csv(labels_path)
+
     if labels_df.empty:
-        print("❌ No windows found in labels.csv")
+        print("❌ No windows found in input CSV")
         return 1
 
     print(f"Extracting features from {len(labels_df)} windows...")

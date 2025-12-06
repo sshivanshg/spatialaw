@@ -37,7 +37,8 @@ st.markdown("Upload a CSI recording (`.dat` or `.npy`) to detect human presence.
 
 # Sidebar
 st.sidebar.header("Configuration")
-model_type = st.sidebar.radio("Select Model", ["Random Forest (Classic)", "1D-CNN (Deep Learning)"])
+# model_type = st.sidebar.radio("Select Model", ["Random Forest (Classic)", "1D-CNN (Deep Learning)"])
+st.sidebar.info("Model: Random Forest (Classic)")
 model_dir = st.sidebar.text_input("Model Directory", "models")
 binary_dir = st.sidebar.text_input("Binary Data Directory", "data/processed/binary")
 
@@ -55,10 +56,6 @@ def load_rf_model(model_dir_path, binary_dir_path):
         with open(feature_names_path) as f:
             feature_names = json.load(f)
             
-        # Filter out features that were dropped during training
-        features_to_drop = ['csi_variance_mean', 'csi_velocity_mean']
-        feature_names = [f for f in feature_names if f not in features_to_drop]
-            
         detector = MotionDetector(
             feature_names=feature_names,
             model_path=model_path,
@@ -68,68 +65,14 @@ def load_rf_model(model_dir_path, binary_dir_path):
     except Exception as e:
         return None, str(e)
 
-@st.cache_resource
-def load_cnn_model(model_dir_path):
-    try:
-        model_path = Path(model_dir_path) / "presence_detector_cnn.pth"
-        if not model_path.exists():
-            return None, f"Model not found at {model_path}"
-            
-        import torch
-        import torch.nn as nn
-        
-        # Define Architecture (Must match training script)
-        class CNN(nn.Module):
-            def __init__(self, input_channels=60, num_classes=2):
-                super(CNN, self).__init__()
-                self.conv1 = nn.Conv1d(in_channels=input_channels, out_channels=32, kernel_size=7, padding=3)
-                self.relu1 = nn.ReLU()
-                self.pool1 = nn.MaxPool1d(kernel_size=2)
-                
-                self.conv2 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=5, padding=2)
-                self.relu2 = nn.ReLU()
-                self.pool2 = nn.MaxPool1d(kernel_size=2)
-                
-                self.conv3 = nn.Conv1d(in_channels=64, out_channels=128, kernel_size=3, padding=1)
-                self.relu3 = nn.ReLU()
-                self.pool3 = nn.MaxPool1d(kernel_size=2)
-                
-                self.global_pool = nn.AdaptiveAvgPool1d(1)
-                self.fc = nn.Linear(128, num_classes)
-
-            def forward(self, x):
-                x = self.pool1(self.relu1(self.conv1(x)))
-                x = self.pool2(self.relu2(self.conv2(x)))
-                x = self.pool3(self.relu3(self.conv3(x)))
-                x = self.global_pool(x)
-                x = x.view(x.size(0), -1)
-                x = self.fc(x)
-                return x
-        
-        checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
-        input_channels = checkpoint.get('input_channels', 60)
-        model = CNN(input_channels=input_channels)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        model.eval()
-        return model, None
-    except Exception as e:
-        return None, str(e)
-
 # Load Selected Model
-detector = None
-cnn_model = None
-error_msg = None
-
-if model_type == "Random Forest (Classic)":
-    detector, error_msg = load_rf_model(model_dir, binary_dir)
-else:
-    cnn_model, error_msg = load_cnn_model(model_dir)
+detector, error_msg = load_rf_model(model_dir, binary_dir)
 
 if error_msg:
     st.sidebar.error(f"Failed to load model: {error_msg}")
     st.sidebar.warning("Please ensure you have run the training script.")
 else:
-    st.sidebar.success(f"{model_type} Loaded! ")
+    st.sidebar.success(f"Random Forest Model Loaded!")
 
 # File Uploader
 uploaded_file = st.file_uploader("Choose a CSI file", type=["dat", "npy"])
@@ -158,7 +101,21 @@ if uploaded_file is not None:
                 if csi.shape[0] in [30, 60] and csi.shape[1] > 256:
                     csi = csi.T
                 
-                windows = window_csi(csi, T=256, stride=64)
+                
+                # Pad if shorter than required window size
+                window_size = 256
+                stride = 64
+                
+                if csi.shape[0] < window_size:
+                    # Pad with last value to reach required length
+                    pad_len = window_size - csi.shape[0]
+                    # Assuming csi is (Time, Subcarriers)
+                    csi = np.pad(csi, ((0, pad_len), (0, 0)), mode='edge')
+                    # Update metrics to reflect padding
+                    st.toast(f"Note: File too short ({csi.shape[0]-pad_len}), padded to {window_size} samples.", icon="ℹ️")
+
+                # Generate windows
+                windows = window_csi(csi, T=window_size, stride=stride)
             
             if len(windows) == 0:
                 st.error(f"File is too short to generate windows. Shape: {csi.shape}, Required: {256} samples.")
@@ -180,31 +137,13 @@ if uploaded_file is not None:
                     # Calculate noise metric (variance) for visualization
                     noise_levels.append(np.mean(np.var(w_denoised, axis=1)))
                     
-                    w_norm = normalize_window(w_denoised)
+                    w_norm = normalize_window(w_denoised).astype(np.float32)
                     processed_windows.append(w_norm)
                 
                 processed_windows = np.stack(processed_windows)
                 
                 # Predict
-                if model_type == "Random Forest (Classic)":
-                    probs = detector.predict_proba_from_windows(processed_windows)[:, 1]
-                else:
-                    # CNN Inference
-                    import torch
-                    import torch.nn.functional as F
-                    
-                    # Ensure shape is (Batch, Channels, Time)
-                    # processed_windows is (Batch, Channels, Time)
-                    # Check channels
-                    if processed_windows.shape[1] == 30 and cnn_model.conv1.in_channels == 60:
-                        # If model expects 60 but we have 30, we might need to duplicate or error?
-                        # For now, let's assume data matches.
-                        pass
-                        
-                    tensor_input = torch.FloatTensor(processed_windows)
-                    with torch.no_grad():
-                        outputs = cnn_model(tensor_input)
-                        probs = F.softmax(outputs, dim=1)[:, 1].numpy()
+                probs = detector.predict_proba_from_windows(processed_windows)[:, 1]
 
                 preds = (probs > 0.5).astype(int)
                 

@@ -72,3 +72,6 @@ data_wifii/
 # TensorBoard
 runs/
 *.tfevents.*
+
+# Demo Documentation
+DEMO.md
