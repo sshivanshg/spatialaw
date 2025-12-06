@@ -107,7 +107,8 @@ print(f"Test Recall:    {test_recall:.4f}")
 print(f"Test F1-Score:  {test_f1:.4f}")
 print(f"Test ROC-AUC:   {test_roc_auc:.4f}")
 print("\nClassification Report:")
-print(classification_report(y_test, y_test_pred, target_names=['No Activity', 'Activity']))
+cls_report_str = classification_report(y_test, y_test_pred, target_names=['No Activity', 'Activity'])
+print(cls_report_str)
 
 
 # Visualizations
@@ -200,4 +201,28 @@ with open(metrics_path, 'w') as f:
     json.dump(metrics, f, indent=2)
 
 print(f"✓ Metrics saved to: {metrics_path}")
+
+# Save detailed artifacts: classification report, confusion matrix, ROC curve
+cls_report_path = output_dir / "presence_detector_classification_report.txt"
+with open(cls_report_path, "w") as f:
+    f.write(cls_report_str)
+print(f"✓ Classification report saved to: {cls_report_path}")
+
+cm_path = output_dir / "presence_detector_confusion_matrix.json"
+with open(cm_path, "w") as f:
+    json.dump({
+        "labels": ["No Activity", "Activity"],
+        "matrix": cm.tolist(),
+    }, f, indent=2)
+print(f"✓ Confusion matrix saved to: {cm_path}")
+
+roc_path = output_dir / "presence_detector_roc_curve.json"
+with open(roc_path, "w") as f:
+    json.dump({
+        "fpr": fpr.tolist(),
+        "tpr": tpr.tolist(),
+        "thresholds": thresholds.tolist(),
+        "roc_auc": float(test_roc_auc),
+    }, f, indent=2)
+print(f"✓ ROC curve data saved to: {roc_path}")
 
