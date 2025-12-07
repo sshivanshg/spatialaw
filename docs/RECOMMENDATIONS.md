@@ -1,16 +1,46 @@
 # Additional Recommendations for Project Improvement
 
-After restructuring the folder hierarchy, here are recommended next steps to further improve the project:
+## Branch Workflow
+
+**Current Status**: Restructuring is complete in the `restructured` branch.
+
+### Before Implementing Recommendations:
+
+1. **Test the restructured branch**:
+   ```bash
+   git checkout restructured
+   streamlit run app.py
+   python scripts/data_preparation/generate_windows.py --help
+   python training/train_random_forest.py --help
+   ```
+
+2. **Merge to main** (after testing):
+   ```bash
+   git checkout main
+   git merge restructured
+   git push origin main
+   ```
+
+3. **Then proceed with recommendations below**
+
+---
+
+After merging the restructured branch, here are recommended next steps to further improve the project:
 
 ## 1. Package Installation & Development Setup
 
 ### Make the package installable
 ```bash
+# First, ensure you're on the restructured branch (or have merged to main)
+git checkout restructured  # or main after merge
+
 # Install in editable mode for development
 pip install -e .
 ```
 
 This allows importing `spatialaw` from anywhere without path manipulation.
+
+**Note**: This only works with the new structure in the `restructured` branch.
 
 **Update pyproject.toml** to include all dependencies and proper package discovery:
 ```toml
@@ -367,8 +397,11 @@ async def predict(file: UploadFile):
 
 ## Priority Order
 
+**Immediate** (Before anything else):
+0. Test and merge `restructured` branch to `main`
+
 **High Priority** (Do these first):
-1. Update .gitignore
+1. Update .gitignore ✅ (Already done in restructured branch)
 2. Make package installable
 3. Add basic tests
 4. Setup logging
@@ -385,6 +418,7 @@ async def predict(file: UploadFile):
 
 ## Implementation Timeline
 
+**Day 1**: Test and merge `restructured` branch
 **Week 1**: High priority items
 **Week 2**: Medium priority items  
 **Week 3**: Documentation and testing

@@ -1,8 +1,50 @@
 # Cleanup Guide
 
-After verifying the restructured project works correctly, you can safely clean up old directories and files.
+**Note**: These changes are currently in the `restructured` branch. After merging to `main` and verifying everything works correctly, you can safely clean up old directories and files.
 
-## Safe to Remove (After Testing)
+## Branch Workflow
+
+### 1. Review & Test on restructured Branch
+```bash
+# Make sure you're on the restructured branch
+git checkout restructured
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Run tests (see verification steps below)
+```
+
+### 2. Merge to Main (After Testing)
+
+**Option A: Direct Merge** (if you have write access):
+```bash
+# Switch to main
+git checkout main
+
+# Merge restructured branch
+git merge restructured
+
+# Push to remote
+git push origin main
+```
+
+**Option B: Pull Request** (recommended for team review):
+1. Go to: https://github.com/sshivanshg/spatialaw/pull/new/restructured
+2. Create PR from `restructured` to `main`
+3. Review changes with team
+4. Merge via GitHub interface
+
+### 3. Clean Up Branch (Optional)
+```bash
+# Delete local branch after successful merge
+git branch -d restructured
+
+# Delete remote branch
+git push origin --delete restructured
+```
+
+## Safe to Remove (After Merging & Testing)
 
 ### 1. Archive Directory
 ```bash
@@ -62,6 +104,14 @@ rm -f download_test_data.sh  # Or move to scripts/data_preparation/
 
 ## Verification Steps Before Cleanup
 
+**Important**: Perform these tests on the `restructured` branch BEFORE merging to main.
+
+```bash
+# Ensure you're on restructured branch
+git checkout restructured
+source .venv/bin/activate
+```
+
 ### 1. Test Data Pipeline
 ```bash
 # Run a complete pipeline test
@@ -98,7 +148,10 @@ pytest tests/
 
 ## Cleanup Commands (All at Once)
 
-**Only run after verifying everything works!**
+**Only run after:**
+1. ✅ Testing on `restructured` branch
+2. ✅ Merging to `main` branch
+3. ✅ Verifying everything works on `main`
 
 ```bash
 #!/bin/bash

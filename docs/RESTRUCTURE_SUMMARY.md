@@ -1,5 +1,21 @@
 # Project Restructuring Summary
 
+## Branch Status
+
+**Current State**: All restructuring changes are in the `restructured` branch.
+
+**To use the new structure**:
+```bash
+git checkout restructured
+```
+
+**To merge to main** (after testing):
+```bash
+git checkout main
+git merge restructured
+git push origin main
+```
+
 ## Overview
 The spatialaw project has been reorganized from a scattered structure with an `_archive/` directory into a clean, professional Python project layout following best practices.
 
@@ -93,9 +109,11 @@ spatialaw/
 ## Migration Notes
 
 ### For Developers
+- **Branch**: Work on `restructured` branch for new structure
 - **Old imports**: Any scripts using old import paths need updating
-- **Archive folder**: `_archive/` kept for reference but no longer in use path
+- **Archive folder**: `_archive/` kept for reference but no longer in use path (can be removed after merge)
 - **Model paths**: Training scripts now in `training/` instead of `model_tools/`
+- **Main branch**: Still has old structure until `restructured` is merged
 
 ### Import Path Updates Required
 
@@ -127,10 +145,22 @@ python training/train_random_forest.py
 
 ## What to Clean Up Next
 
-The `_archive/` folder and `model_tools/` folder can be safely removed once you've verified:
-1. All functionality is working with new paths
-2. No custom scripts depend on old structure
-3. All training/scripts have been tested
+### Step 1: Test on restructured Branch
+Test all functionality on the `restructured` branch first.
+
+### Step 2: Merge to Main
+After successful testing, merge to `main`:
+```bash
+git checkout main
+git merge restructured
+```
+
+### Step 3: Clean Up Old Directories
+The `_archive/` folder and `model_tools/` folder can be safely removed once you've:
+1. ✅ Merged to main
+2. ✅ Verified all functionality works with new paths
+3. ✅ Confirmed no custom scripts depend on old structure
+4. ✅ Tested all training/scripts
 
 ## Testing Checklist
 
