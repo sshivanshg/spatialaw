@@ -143,24 +143,21 @@ python scripts/data_preparation/generate_windows.py
 python training/train_random_forest.py
 ```
 
-## What to Clean Up Next
+## Cleanup Status
 
-### Step 1: Test on restructured Branch
-Test all functionality on the `restructured` branch first.
+### ✅ Already Cleaned Up
+The following duplicate and unnecessary files have been removed from the `restructured` branch:
+- ✅ `_archive/` - All duplicate source files, scripts, and model tools
+- ✅ `model_tools/` - Duplicates moved to `training/`
+- ✅ `debug_features.py` - Debug script no longer needed
+- ✅ `download_test_data.sh` - Redundant with `scripts/data_preparation/fetch_wiar.sh`
 
-### Step 2: Merge to Main
-After successful testing, merge to `main`:
+### Ready to Merge
+After testing on the `restructured` branch, you can safely merge to `main`:
 ```bash
 git checkout main
 git merge restructured
 ```
-
-### Step 3: Clean Up Old Directories
-The `_archive/` folder and `model_tools/` folder can be safely removed once you've:
-1. ✅ Merged to main
-2. ✅ Verified all functionality works with new paths
-3. ✅ Confirmed no custom scripts depend on old structure
-4. ✅ Tested all training/scripts
 
 ## Testing Checklist
 

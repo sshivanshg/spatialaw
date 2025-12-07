@@ -39,7 +39,10 @@ This repo turns the WiAR dataset (Intel 5300 CSI captures) into a binary **prese
 │   ├── spatialaw_paper.tex           # LaTeX paper
 │   ├── spatialaw_short_report.tex    # Short report
 │   ├── VivaPrep.txt                  # Viva Q&A cheat sheet
-│   └── original_README.md            # Original documentation
+│   ├── original_README.md            # Original documentation
+│   ├── RESTRUCTURE_SUMMARY.md        # Restructuring guide
+│   ├── RECOMMENDATIONS.md            # Improvement recommendations
+│   └── CLEANUP_GUIDE.md              # Cleanup instructions
 ├── notebooks/                        # Jupyter notebooks
 ├── tests/                            # Unit tests
 ├── requirements.txt / setup.sh       # Environment helpers

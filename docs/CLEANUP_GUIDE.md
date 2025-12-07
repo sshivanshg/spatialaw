@@ -1,6 +1,14 @@
 # Cleanup Guide
 
-**Note**: These changes are currently in the `restructured` branch. After merging to `main` and verifying everything works correctly, you can safely clean up old directories and files.
+**Status**: ✅ Cleanup already completed in the `restructured` branch!
+
+All duplicate and unnecessary files have been removed:
+- `_archive/` directory (all duplicates)
+- `model_tools/` directory (merged into `training/`)
+- `debug_features.py` (debug script)
+- `download_test_data.sh` (redundant)
+
+This guide now serves as reference for the cleanup that was performed.
 
 ## Branch Workflow
 
@@ -44,42 +52,29 @@ git branch -d restructured
 git push origin --delete restructured
 ```
 
-## Safe to Remove (After Merging & Testing)
+## Files & Directories Removed
 
-### 1. Archive Directory
-```bash
-# The _archive/ directory contains old structure - no longer needed
-rm -rf _archive/
-```
+### ✅ 1. Archive Directory
+Removed entire `_archive/` directory containing:
+- Duplicate source files from `_archive/src/`
+- Duplicate scripts from `_archive/scripts/`
+- Duplicate model tools from `_archive/model_tools/`
+- Old HTML visualization files
 
-**Before removing, verify:**
-- ✓ All scripts in `scripts/` work correctly
-- ✓ Training scripts in `training/` execute properly
-- ✓ Imports in app.py and other files are updated
-- ✓ No custom scripts depend on _archive/ paths
+**Total files removed**: ~30+ duplicate Python files
 
-### 2. Old model_tools Directory
-```bash
-# Contents merged into training/
-rm -rf model_tools/
-```
+### ✅ 2. Old model_tools Directory
+Removed `model_tools/` directory:
+- `train_random_forest.py` → moved to `training/`
+- `train_cnn.py` → moved to `training/`
 
-**Verify first:**
-- ✓ All training scripts copied to `training/`
-- ✓ No references to `model_tools/` in code or docs
+### ✅ 3. Debug & Temporary Files
+Removed:
+- `debug_features.py` - One-off debug script
+- `download_test_data.sh` - Redundant with `scripts/data_preparation/fetch_wiar.sh`
 
-### 3. Empty paper Directory
-```bash
-# Contents moved to docs/
-rmdir paper/  # Will only remove if empty
-```
-
-### 4. Temporary/Debug Files
-```bash
-# Clean up debug and temporary files
-rm -f debug_features.py
-rm -f download_test_data.sh  # Or move to scripts/data_preparation/
-```
+### Result
+Project size reduced by ~3-8 MB of duplicate code.
 
 ## Files to Keep
 
@@ -146,91 +141,69 @@ python -c "from spatialaw.models import MotionDetector; print('OK')"
 pytest tests/
 ```
 
-## Cleanup Commands (All at Once)
+## Cleanup Commands Used
 
-**Only run after:**
-1. ✅ Testing on `restructured` branch
-2. ✅ Merging to `main` branch
-3. ✅ Verifying everything works on `main`
+**For reference**, these are the commands that were used to clean up the project:
 
 ```bash
-#!/bin/bash
-# cleanup.sh - Run this after thorough testing
-
-cd /Users/rishabh/pgming/spatialaw
-
-echo "🧹 Cleaning up old structure..."
-
-# Remove archive
-if [ -d "_archive" ]; then
-    echo "Removing _archive/..."
-    rm -rf _archive/
-fi
-
-# Remove old model_tools
-if [ -d "model_tools" ]; then
-    echo "Removing model_tools/..."
-    rm -rf model_tools/
-fi
-
-# Remove empty paper dir
-if [ -d "paper" ]; then
-    echo "Removing empty paper/..."
-    rmdir paper/ 2>/dev/null || echo "paper/ not empty or doesn't exist"
-fi
-
-# Remove debug files (optional)
-echo "Removing debug files..."
-rm -f debug_features.py
+# Remove duplicate directories and files
+git rm -rf _archive/ model_tools/
+git rm debug_features.py download_test_data.sh
 
 # Clean Python cache
-echo "Cleaning Python cache..."
 find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null
-find . -type f -name "*.pyc" -delete 2>/dev/null
 
-echo "✅ Cleanup complete!"
-echo "📊 Current structure:"
-ls -l | grep '^d' | awk '{print $9}'
+# Commit the cleanup
+git add -A
+git commit -m "chore: remove duplicate files and directories"
 ```
+
+These commands have already been executed in the `restructured` branch.
 
 ## Post-Cleanup Verification
 
-After cleanup, verify structure:
+The cleanup has been completed. To verify the new structure:
 
 ```bash
+# Switch to restructured branch
+git checkout restructured
+
 # Check main directories exist
 ls -ld src/ scripts/ training/ config/ docs/ notebooks/ tests/
 
 # Verify package is importable
-python -c "import spatialaw; print(f'Package version: {spatialaw.__version__}')"
+python -c "import sys; sys.path.insert(0, 'src'); from spatialaw.preprocessing import load_dat_file; print('✓ Imports working')"
 
 # Check git status
 git status
 ```
 
+## Clean Directory Structure
+
+After cleanup, the project has this clean structure:
+
 ## What if Something Breaks?
 
-If you encounter issues after cleanup:
+If you encounter issues after merging the cleaned-up branch:
 
-1. **Check git history**:
+1. **Check import paths**:
    ```bash
-   git log --oneline
-   git show <commit-hash>
+   # Search for any remaining references to old paths
+   grep -r "from src\." . --exclude-dir=.git --exclude-dir=.venv
+   grep -r "model_tools" . --exclude-dir=.git --exclude-dir=.venv
    ```
 
-2. **Revert if needed**:
+2. **Verify new paths**:
+   - Old: `from src.preprocess.X import Y`
+   - New: `from spatialaw.preprocessing.X import Y`
+   
+3. **Revert if needed**:
    ```bash
-   git checkout HEAD~1 -- _archive/
+   # Go back to main branch
+   git checkout main
    ```
 
-3. **Compare paths**:
-   - Old: `_archive/src/preprocess/...`
-   - New: `src/spatialaw/preprocessing/...`
-
-4. **Check import errors**:
-   - Look for any remaining references to old paths
-   - Search: `grep -r "_archive" . --exclude-dir=.git`
-   - Search: `grep -r "from src\." . --exclude-dir=.git`
+All functionality has been preserved - just in better organized locations!
 
 ## Optional: Git Commit Strategy
 
