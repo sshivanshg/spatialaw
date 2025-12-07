@@ -11,16 +11,16 @@ from pathlib import Path
 import tempfile
 import os
 
-# Add _archive to path to import project modules
+# Add src to path to import project modules
 ROOT = Path(__file__).parent
-ARCHIVE_DIR = ROOT / "_archive"
-if str(ARCHIVE_DIR) not in sys.path:
-    sys.path.insert(0, str(ARCHIVE_DIR))
+SRC_DIR = ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 try:
-    from src.preprocess.dat_loader import load_dat_file
-    from src.preprocess.preprocess import window_csi, denoise_window, normalize_window
-    from src.models.motion_detector import MotionDetector
+    from spatialaw.preprocessing.dat_loader import load_dat_file
+    from spatialaw.preprocessing.preprocess import window_csi, denoise_window, normalize_window
+    from spatialaw.models.motion_detector import MotionDetector
 except ImportError as e:
     st.error(f"Error importing project modules: {e}")
     st.stop()

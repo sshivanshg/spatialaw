@@ -1,0 +1,170 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\titleformat{\section}[block]{\large\bfseries}{}{0pt}{}
+\titleformat{\subsection}[block]{\normalsize\bfseries}{}{0pt}{}
+
+\title{Explainer: SpatialAw}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Executive Summary}
+SpatialAw uses everyday WiFi signals to tell if someone is present in a room. It does not use cameras or microphones. Instead, it looks at how the WiFi signal changes when a person moves or is present, a measurement called \emph{Channel State Information (CSI)}. We clean the CSI, summarize it into simple motion-related features, and classify each short time window as \textit{occupied} or \textit{vacant}. On the WiAR dataset, our Random Forest model reaches about 92\% accuracy and 0.96 ROC-AUC.
+
+\textbf{Why this is useful}
+\begin{itemize}
+  \item \textbf{Privacy-first}: No images or audio; just radio signal patterns.
+  \item \textbf{Low cost}: Works with commodity WiFi hardware (Intel 5300).
+  \item \textbf{Practical}: Real-time on a laptop or small computer.
+\end{itemize}
+
+\section*{The Problem}
+Detecting human presence is essential for smart buildings, energy management, security, and elder care. Traditional approaches have drawbacks:
+\begin{itemize}
+  \item \textbf{Cameras}: Privacy concerns; not acceptable in bedrooms/bathrooms.
+  \item \textbf{Wearables}: Require user compliance; inconvenient for visitors.
+  \item \textbf{PIR sensors}: Limited range; can't see through walls; miss stationary people.
+\end{itemize}
+
+WiFi CSI-based detection offers a device-free, privacy-preserving alternative that works through walls and detects even stationary presence by analyzing subtle signal changes.
+
+\section*{What Is CSI?}
+WiFi uses many narrow frequency bands (called subcarriers) to send data. CSI tells us how each subcarrier was affected by the room: reflections from walls, furniture, and people. When someone moves, the reflections change slightly, and CSI captures that.
+
+\section*{How It Works (Step by Step)}
+\textbf{1) Read CSI}: Each packet carries measurements for 30 subcarriers. We use amplitudes (signal strength) and average across antennas.
+
+\textbf{2) Split into windows}: We cut the stream into short segments (length $T=256$, stride 64). Each window is a small slice of time.
+
+\textbf{3) Clean}: We apply a small moving average to reduce random noise.
+
+\textbf{4) Normalize}: For each subcarrier, we standardize values (z-score) so windows are comparable.
+
+\textbf{5) Summarize with features}: We compute 14 simple metrics that capture motion and variability:
+\begin{itemize}
+  \item Variability: variance mean/std/max; normalized std mean/std
+  \item Envelope: Hilbert envelope mean/std (smooth amplitude)
+  \item Motion cues: spectral entropy; velocity mean/max; MAD mean/std
+  \item Periodicity: dominant frequency mean/std (from FFT)
+\end{itemize}
+
+\textbf{6) Classify}: We train classifiers on these features:
+\begin{itemize}
+  \item \textbf{Random Forest (RF)}—robust with small datasets, fast, and interpretable.
+  \item \textbf{1D-CNN}—learns patterns directly from the window; slightly lower accuracy here.
+\end{itemize}
+
+\section*{Data and Labels}
+\textbf{Dataset}: We use the WiAR benchmark with 16 activities recorded in a lab. After windowing, we have about 2{,}092 segments.
+
+\textbf{Labels}: We assign \textit{occupied} when motion-related features are strong (e.g., variance + velocity); very low motion becomes \textit{vacant}. We balance the two classes using SMOTE so the model sees enough examples of each.
+
+\section*{Results}
+We use group-aware train/test splits to avoid leakage (windows from the same recording are not split across train and test).
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Metric} & \textbf{Random Forest} \\
+\midrule
+Accuracy & 0.92 \\
+Precision & 0.91 \\
+Recall & 0.93 \\
+F1 & 0.92 \\
+ROC-AUC & 0.96 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{What this means}: The RF classifier is accurate and fast. High recall (0.93) means it rarely misses an occupied room. Inference is about 0.08 ms per window on a laptop CPU, which is easily real-time.
+
+\section*{Why It Matters}
+\begin{itemize}
+  \item \textbf{Energy efficiency}: Trigger HVAC/lighting only when occupied—reduce waste in empty rooms.
+  \item \textbf{Elder care}: Detect presence/motion without cameras—monitor well-being while respecting privacy.
+  \item \textbf{Security}: Spot intrusions or unusual activity patterns—alert when unexpected presence is detected.
+  \item \textbf{Space utilization}: Understand room occupancy patterns for better workplace planning.
+\end{itemize}
+
+\section*{How to Reproduce (Simple Commands)}
+Below is a minimal recipe to run the pipeline. Run these from the repository root.
+
+\begin{verbatim}
+# 1) Set up environment
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# 2) Prepare data (use WiAR or your own Intel 5300 .dat files)
+bash scripts/fetch_wiar.sh            # optional helper, if available
+python scripts/process_binary_dataset.py --input <path-to-wiar-or-dat>
+
+# 3) Generate windows and features
+python scripts/generate_windows.py --window 256 --stride 64
+python scripts/extract_features.py --features all
+
+# 4) Train and evaluate models
+python model_tools/train_presence_detector.py --model rf
+python model_tools/train_presence_detector.py --model cnn
+
+# 5) See outputs
+ls models/                            # saved models
+ls model_tools/html/                  # metrics, ROC, confusion matrix
+\end{verbatim}
+
+\section*{Deploying on the Edge}
+\begin{itemize}
+  \item \textbf{RF model size}: about 11 MB; runs on CPU.
+  \item \textbf{Latency}: \textless1 ms per window typical on laptop-class CPUs.
+  \item \textbf{Integration}: Wrap preprocessing + features + RF predict into a loop that reads CSI packets live.
+\end{itemize}
+
+\section*{Limitations}
+\begin{itemize}
+  \item Single lab environment; performance may vary in different rooms.
+  \item Binary labels derived from a multi-class dataset; thresholding is simple.
+  \item Single-person segments; multiple people not modeled explicitly.
+\end{itemize}
+
+\section*{Next Steps}
+\begin{itemize}
+  \item Train with data from multiple homes/offices to improve generalization.
+  \item Learn cross-environment invariants (transfer learning, domain adaptation).
+  \item Multi-person counting and activity-aware presence.
+  \item Combine hand-crafted features with learned features (hybrid models).
+  \item Self-supervised pretraining on large unlabeled CSI streams.
+\end{itemize}
+
+\section*{FAQ}
+\textbf{Does this record conversations or images?} No. We only use radio signal patterns (CSI), not audio or video.
+
+\textbf{Do I need special hardware?} An Intel 5300-like WiFi NIC that exposes CSI is ideal. For modern hardware, use devices that provide CSI or similar PHY metrics.
+
+\textbf{Will it work in my home?} Likely yes, but accuracy depends on room layout, furniture, and interference. A small calibration dataset helps.
+
+\textbf{Can it count people?} This version detects presence (yes/no). Counting is a planned extension.
+
+\textbf{Is it real-time?} Yes. The RF model predicts in under a millisecond per window on typical CPUs.
+
+\section*{Glossary}
+\begin{itemize}
+  \item \textbf{CSI (Channel State Information)}: Describes how the WiFi signal traveled through the room.
+  \item \textbf{Subcarrier}: A narrow frequency band used in WiFi’s multi-carrier transmission.
+  \item \textbf{Window}: A short slice of time over which we summarize the signal.
+  \item \textbf{Feature}: A simple numeric summary that helps the classifier (e.g., variance).
+  \item \textbf{Random Forest}: An ensemble of decision trees that votes on the final class.
+  \item \textbf{ROC-AUC}: A measure of how well the model separates occupied vs. vacant across thresholds.
+\end{itemize}
+
+\vspace{8pt}
+\noindent\textit{Repo paths:} See \texttt{src/} for loaders and preprocessing; \texttt{model\_tools/} for training/visualization; \texttt{models/} for saved artifacts; \texttt{scripts/} for data preparation.
+
+\end{document}

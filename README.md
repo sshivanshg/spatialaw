@@ -15,21 +15,35 @@ This repo turns the WiAR dataset (Intel 5300 CSI captures) into a binary **prese
 ## Repository Tour
 ```
 .
-├── Spatial_Awareness_Project.ipynb   # Full walkthrough / report
 ├── app.py                            # Streamlit dashboard
-├── model_tools/
-│   ├── train_random_forest.py        # Feature-based baseline (uses data/processed/binary)
-│   └── train_cnn.py                  # Simple CLI wrapper for CNN training (legacy)
-├── models/                           # Saved artifacts (RF scaler/model, CNN weights)
+├── src/spatialaw/                    # Main package
+│   ├── data/                         # Dataset utilities
+│   ├── models/                       # Model implementations
+│   ├── preprocessing/                # CSI data preprocessing
+│   └── utils/                        # Helper utilities
+├── training/                         # Model training scripts
+│   ├── train_random_forest.py        # Feature-based baseline
+│   ├── train_cnn.py                  # CNN training
+│   ├── train_presence_cnn.py         # Advanced CNN training
+│   ├── live_predict.py               # Live prediction
+│   └── tune_presence_detector.py     # Hyperparameter tuning
+├── scripts/                          # Data pipeline scripts
+│   ├── data_preparation/             # Data prep (windowing, features, synthetic generation)
+│   ├── visualization/                # Visualization utilities
+│   └── run_pipeline.py               # End-to-end pipeline
+├── config/                           # Configuration files
+│   └── settings.py                   # Project settings
+├── models/                           # Saved model artifacts (git-ignored)
 ├── data/                             # Raw + processed datasets (git-ignored)
+├── docs/                             # Documentation & papers
+│   ├── spatialaw_paper.tex           # LaTeX paper
+│   ├── spatialaw_short_report.tex    # Short report
+│   ├── VivaPrep.txt                  # Viva Q&A cheat sheet
+│   └── original_README.md            # Original documentation
+├── notebooks/                        # Jupyter notebooks
+├── tests/                            # Unit tests
 ├── requirements.txt / setup.sh       # Environment helpers
-├── Makefile                          # Convenience targets (setup/install/clean)
-├── VivaPrep.txt                      # Viva/Q&A cheat sheet
-└── _archive/                         # Source modules + utility scripts
-    ├── scripts/                      # Data prep pipeline (download, windowing, features,
-    │                                   binary fusion, validation, synthetic generation)
-    ├── model_tools/                  # Advanced training (RandomForest, CNN) + visualization CLIs
-    └── src/                          # Library code (CSI loaders, preprocess, dataset helpers)
+└── Makefile                          # Convenience targets
 ```
 
 > All raw/processed data lives in `data/` and is ignored by git. Regenerate using the scripts below if you clone the repo from scratch.
@@ -38,27 +52,27 @@ This repo turns the WiAR dataset (Intel 5300 CSI captures) into a binary **prese
 
 1. **Download WiAR**
    ```bash
-   bash _archive/scripts/fetch_wiar.sh   # or follow README in data/raw/WiAR
+   bash scripts/data_preparation/fetch_wiar.sh   # or follow README in data/raw/WiAR
    ```
 2. **Generate CSI windows**
    ```bash
-   python _archive/scripts/generate_windows.py \
+   python scripts/data_preparation/generate_windows.py \
        --input-dir data/raw/WiAR \
        --out-dir data/processed/windows
    ```
 3. **Extract features (optional, for RandomForest)**
    ```bash
-   python _archive/scripts/extract_features.py \
+   python scripts/data_preparation/extract_features.py \
        --windows-dir data/processed/windows \
        --output-dir data/processed/features
-   python _archive/scripts/process_binary_dataset.py \
+   python scripts/data_preparation/process_binary_dataset.py \
        --features-dir data/processed/features \
        --output-dir data/processed/binary
    ```
 4. **Prepare raw-window presence splits (for CNN)**
    ```bash
-   python _archive/scripts/generate_synthetic_low_motion_windows.py --count 1000
-   python _archive/scripts/prepare_presence_windows.py \
+   python scripts/data_preparation/generate_synthetic_low_motion_windows.py --count 1000
+   python scripts/data_preparation/prepare_presence_windows.py \
        --windows-dir data/processed/windows \
        --output-dir data/processed/windows_binary \
        --extra-labels-csv data/processed/windows_binary/synthetic_windows.csv
@@ -67,15 +81,15 @@ This repo turns the WiAR dataset (Intel 5300 CSI captures) into a binary **prese
 
 5. **Validate (optional)**
    ```bash
-   python _archive/scripts/validate_binary_dataset.py
+   python scripts/data_preparation/validate_binary_dataset.py
    ```
 
 ## Training & Evaluation
 
 | Model | Command | Inputs | Artifacts |
 | --- | --- | --- | --- |
-| RandomForestClassifier | `python model_tools/train_random_forest.py` | `data/processed/windows_binary/all_windows.csv` via feature extraction | `models/presence_detector_rf.joblib`, `presence_detector_scaler.joblib`, `presence_detector_metrics.json`, plots under `models/` |
-| CNN (raw windows) | `python model_tools/train_cnn.py` (local helper) or `_archive/model_tools/train_presence_cnn.py` for advanced CLI | `data/processed/windows_binary/train/val/test.csv` + window tensors | `models/presence_detector_cnn.pth`, `presence_detector_cnn_metrics.json` |
+| RandomForestClassifier | `python training/train_random_forest.py` | `data/processed/windows_binary/all_windows.csv` via feature extraction | `models/presence_detector_rf.joblib`, `presence_detector_scaler.joblib`, `presence_detector_metrics.json`, plots under `models/` |
+| CNN (raw windows) | `python training/train_cnn.py` (local helper) or `training/train_presence_cnn.py` for advanced CLI | `data/processed/windows_binary/train/val/test.csv` + window tensors | `models/presence_detector_cnn.pth`, `presence_detector_cnn_metrics.json` |
 
 Both scripts print accuracy/precision/recall/F1/ROC-AUC and save metrics for reproducibility.
 
@@ -108,7 +122,7 @@ To test with your own recordings or new datasets:
     *   The app automatically handles windowing, partial denoising, and normalization.
 
 ## Notebook Workflow
-- `Spatial_Awareness_Project.ipynb` mirrors the CLI pipeline but in a single report: parsing `csiread`, windowing/feature extraction, synthetic empty-room generation, RandomForest training, and evaluation plots. Extend it with the CNN cells if you want a notebook-only submission.
+- Jupyter notebooks in `notebooks/` directory mirror the CLI pipeline but in a single report: parsing `csiread`, windowing/feature extraction, synthetic empty-room generation, RandomForest training, and evaluation plots. Extend it with the CNN cells if you want a notebook-only submission.
 
 ## Data Layout
 ```

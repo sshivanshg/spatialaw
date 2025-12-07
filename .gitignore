@@ -24,7 +24,8 @@ env/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-*.ipynb
+# Keep notebooks for reference
+# *.ipynb
 
 # Data folders (large datasets + derived artifacts)
 data/
@@ -44,6 +45,10 @@ data/
 checkpoints/*.pkl
 checkpoints/*.pth
 checkpoints/*.json
+models/*.joblib
+models/*.pth
+models/*.json
+models/*.png
 
 # Logs
 logs/
@@ -56,9 +61,9 @@ visualizations/
 *.jpg
 *.pdf
 
-# Short report (explainer)
-spatialaw_short_report.pdf
-paper/spatialaw_short_report.tex
+# Short report (explainer) - now in docs/
+# spatialaw_short_report.pdf
+# paper/spatialaw_short_report.tex
 
 # OS
 .DS_Store
