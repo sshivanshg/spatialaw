@@ -17,8 +17,8 @@ if BINARY_DIR is None:
     raise FileNotFoundError("Could not locate data/processed/binary directory")
 
 # Load features and labels
-features_path = BINARY_DIR / "features.npy"
-labels_path = BINARY_DIR / "labels.csv"
+features_path = BINARY_DIR / "features.npy" #x
+labels_path = BINARY_DIR / "labels.csv" #y
 feature_names_path = BINARY_DIR / "feature_names.json"
 
 X = np.load(features_path)

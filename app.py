@@ -246,7 +246,8 @@ if uploaded_file is not None:
                 fig_heat, ax = plt.subplots(figsize=(12, 4))
                 # imshow expects (rows, cols). We want Subcarriers (rows) x Time (cols).
                 # csi is (Subcarriers, Time), so we pass it directly.
-                im = ax.imshow(heatmap_data, aspect='auto', origin='lower', cmap='viridis', interpolation='nearest')
+                # Transpose so Time is X-axis and Subcarriers is Y-axis
+                im = ax.imshow(heatmap_data.T, aspect='auto', origin='lower', cmap='viridis', interpolation='nearest')
                 ax.set_xlabel("Time (samples)")
                 ax.set_ylabel("Subcarriers")
                 plt.colorbar(im, label="Amplitude")
