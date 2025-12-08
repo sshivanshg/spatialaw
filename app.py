@@ -10,6 +10,7 @@ import joblib
 from pathlib import Path
 import tempfile
 import os
+from datetime import datetime
 
 # Add _archive to path to import project modules
 ROOT = Path(__file__).parent
@@ -32,8 +33,8 @@ st.set_page_config(
 )
 
 # Title
-st.title("Spatial Awareness: WiFi Presence Detection")
-st.markdown("Upload a CSI recording (`.dat` or `.npy`) to detect human presence.")
+st.title("Spatial Awareness: Wireless Intrusion Detection")
+st.markdown("CSI-driven presence detection with networked alerting (HTTP webhook).")
 
 # Sidebar
 st.sidebar.header("Configuration")
@@ -41,6 +42,19 @@ st.sidebar.header("Configuration")
 st.sidebar.info("Model: Random Forest (Classic)")
 model_dir = st.sidebar.text_input("Model Directory", "models")
 binary_dir = st.sidebar.text_input("Binary Data Directory", "data/processed/binary")
+
+# Central command server webhook config
+st.sidebar.divider()
+st.sidebar.subheader("Central Command")
+default_endpoint = st.secrets.get("central_server", {}).get("endpoint", "http://localhost:5055/alerts") if hasattr(st, "secrets") else "http://localhost:5055/alerts"
+endpoint = st.sidebar.text_input("Alert Webhook URL", default_endpoint)
+api_key = st.sidebar.text_input("API Key (optional)", value="", type="password")
+auto_alert = st.sidebar.toggle("Auto-send alerts on intrusion", value=True)
+threshold = st.sidebar.slider("Alert Threshold", 0.1, 0.9, 0.5, 0.05)
+
+# Import after Streamlit secrets are available
+from agent.alert_client import AlertClient, AlertClientConfig
+from sensor.csi_sensor import CSISensor, CSISensorConfig
 
 # Load Models (Cached)
 @st.cache_resource
@@ -145,7 +159,7 @@ if uploaded_file is not None:
                 # Predict
                 probs = detector.predict_proba_from_windows(processed_windows)[:, 1]
 
-                preds = (probs > 0.5).astype(int)
+                preds = (probs > threshold).astype(int)
                 
                 # Time axis
                 fs = 100.0
@@ -214,7 +228,7 @@ if uploaded_file is not None:
                         if len(current_df) < 2:
                             fig_prob.update_traces(mode='markers+lines')
                             
-                        fig_prob.add_hline(y=0.5, line_dash="dash", line_color="red", annotation_text="Threshold")
+                        fig_prob.add_hline(y=threshold, line_dash="dash", line_color="red", annotation_text="Threshold")
                         fig_prob.update_layout(yaxis_range=[-0.1, 1.1], xaxis_range=[0, max(time_points[-1], 10)])
                         
                         chart_placeholder.plotly_chart(fig_prob, use_container_width=True)
@@ -232,9 +246,32 @@ if uploaded_file is not None:
                     if len(df_plot) < 2:
                         fig_prob.update_traces(mode='markers+lines')
                     
-                    fig_prob.add_hline(y=0.5, line_dash="dash", line_color="red", annotation_text="Threshold")
+                    fig_prob.add_hline(y=threshold, line_dash="dash", line_color="red", annotation_text="Threshold")
                     fig_prob.update_layout(yaxis_range=[-0.1, 1.1])
                     chart_placeholder.plotly_chart(fig_prob, use_container_width=True)
+
+                # Alerting
+                alert_client = AlertClient(AlertClientConfig(endpoint=endpoint, api_key=(api_key or None)))
+                sensor = CSISensor(CSISensorConfig())
+                intrusions = []
+                for i, p in enumerate(probs):
+                    if p > threshold:
+                        alert = {
+                            "device_id": "wifi-csi-node-1",
+                            "event": "intrusion_detected",
+                            "probability": float(p),
+                            "threshold": float(threshold),
+                            "window_index": int(i),
+                            "timestamp": datetime.utcnow().isoformat() + "Z",
+                            "meta": {"fs_hz": 100.0, "stride_samples": 64, "window_size": 256},
+                        }
+                        intrusions.append(alert)
+                        if auto_alert:
+                            try:
+                                resp = alert_client.send(alert)
+                                st.toast(f"Alert sent (#{i}) {resp.status_code}", icon="🚨")
+                            except Exception as e:
+                                st.warning(f"Failed to send alert: {e}")
                 
                 # 2. CSI Heatmap
                 st.subheader("CSI Signal Heatmap")
