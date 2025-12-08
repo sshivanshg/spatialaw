@@ -3,8 +3,6 @@
 > **Turn your WiFi signals into an invisible motion sensor.**
 > *A Privacy-Preserving Alternative to Cameras.*
 
-![Banner](https://img.shields.io/badge/Accuracy-99.4%25-success) ![Banner](https://img.shields.io/badge/Precision-100%25-success) ![Banner](https://img.shields.io/badge/Tech-Intel%205300%20NIC-blue)
-
 ## 📌 Project Overview
 This project utilizes **Channel State Information (CSI)** from standard WiFi signals to detect human presence. Unlike cameras, it preserves privacy and works in the dark. By analyzing the distortions in WiFi waves (Phase and Amplitude), our Machin Learning model can distinguish between an **Empty Room** and **Human Activity** with high precision.
 
