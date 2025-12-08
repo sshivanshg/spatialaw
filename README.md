@@ -3,7 +3,7 @@
 > **Turn your WiFi signals into an invisible motion sensor.**
 > *A Privacy-Preserving Alternative to Cameras.*
 
-## 📌 Project Overview
+## Project Overview
 This project utilizes **Channel State Information (CSI)** from standard WiFi signals to detect human presence. Unlike cameras, it preserves privacy and works in the dark. By analyzing the distortions in WiFi waves (Phase and Amplitude), our Machin Learning model can distinguish between an **Empty Room** and **Human Activity** with high precision.
 
 ### Key Features
@@ -14,7 +14,7 @@ This project utilizes **Channel State Information (CSI)** from standard WiFi sig
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Installation
 Ensure you have Python 3.8+ installed.
@@ -37,7 +37,7 @@ python model_tools/train_random_forest.py
 
 ---
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```text
 .
@@ -56,7 +56,7 @@ python model_tools/train_random_forest.py
 
 ---
 
-## 📊 Performance Metrics
+## Performance Metrics
 
 Our final **Random Forest Model** (150 Estimators) achieved the following on independent test data:
 
