@@ -56,6 +56,10 @@ visualizations/
 *.jpg
 *.pdf
 
+# Short report (explainer)
+spatialaw_short_report.pdf
+paper/spatialaw_short_report.tex
+
 # OS
 .DS_Store
 Thumbs.db
@@ -68,3 +72,7 @@ data_wifii/
 # TensorBoard
 runs/
 *.tfevents.*
+
+# Demo Documentation
+DEMO.md
+VivaPrep.txt

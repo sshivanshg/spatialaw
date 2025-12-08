@@ -17,18 +17,18 @@ echo "✓ Python 3 found: $(python3 --version)"
 echo ""
 
 # Create virtual environment if it doesn't exist
-if [ ! -d "venv" ]; then
-    echo "Creating virtual environment..."
-    python3 -m venv venv
+if [ ! -d ".venv" ]; then
+    echo "Creating virtual environment (.venv)..."
+    python3 -m venv .venv
     echo "✓ Virtual environment created"
 else
-    echo "✓ Virtual environment already exists"
+    echo "✓ Virtual environment already exists (.venv)"
 fi
 echo ""
 
 # Activate virtual environment
-echo "Activating virtual environment..."
-source venv/bin/activate
+echo "Activating virtual environment (.venv)..."
+source .venv/bin/activate
 echo "✓ Virtual environment activated"
 echo ""
 
@@ -49,12 +49,10 @@ echo "Setup Complete!"
 echo "=========================================="
 echo ""
 echo "To activate the virtual environment in the future:"
-echo "  source venv/bin/activate"
+echo "  source .venv/bin/activate"
 echo ""
-echo "To train the model, use Jupyter notebooks:"
-echo "  jupyter notebook notebooks/train_presence_detector.ipynb"
-echo ""
-echo "To visualize results:"
-echo "  jupyter notebook notebooks/visualize_activity_heatmap.ipynb"
+echo "To train models via scripts:"
+echo "  python model_tools/train_random_forest.py"
+echo "  python model_tools/train_cnn.py"
 echo ""
 
