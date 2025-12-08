@@ -69,20 +69,23 @@
 % ABSTRACT
 % ============================================================================
 \begin{abstract}
-Device-free sensing leverages ambient wireless signals to detect human presence without requiring instrumentation on the subject.
-In this paper, we present \textbf{SpatialAw}, an end-to-end system that extracts Channel State Information (CSI) from commodity IEEE~802.11n WiFi hardware and classifies indoor environments as \emph{occupied} (activity present) or \emph{vacant} (no activity).
+This paper presents \textbf{SpatiaLaw}, a proof-of-concept system for detecting human presence using WiFi signals.
+Instead of cameras or wearables, we use Channel State Information (CSI) from commodity Intel~5300 WiFi hardware to determine if a room is occupied or empty.
 
-We provide a rigorous mathematical treatment of the underlying wireless propagation phenomena, including multipath channel modeling, Fresnel zone perturbation theory, and Doppler-induced phase shifts caused by human motion.
-Our signal-processing pipeline comprises: (i)~raw CSI ingestion from Intel~5300 Network Interface Cards supporting 30 OFDM subcarriers, (ii)~sliding-window segmentation with causal moving-average denoising and per-subcarrier z-score normalization, (iii)~extraction of 14 physics-informed statistical features---including Hilbert-transform envelope, Shannon entropy, first-order velocity, Median Absolute Deviation, and FFT-based dominant frequency---and (iv)~binary classification via a Random Forest ensemble ($B=150$ trees, Gini impurity, class-balanced weighting).
+Our approach works by analyzing how WiFi signals are affected by human motion.
+When someone moves in a room, they disturb the wireless channel, causing measurable fluctuations in signal amplitude.
+We capture these patterns using 14 statistical features based on signal variance, velocity (rate of change), and entropy (randomness).
 
-We justify Random Forest over deep learning approaches based on three principles: (1)~physics-grounded features that directly encode Doppler shifts and multipath variations, (2)~dataset size constraints (~2,000 windows), and (3)~reduced overfitting risk compared to CNNs that may memorize environment-specific patterns.
+The system pipeline includes: (i)~reading raw CSI data from the Intel~5300 NIC (30 frequency subcarriers), (ii)~preprocessing with sliding windows, noise filtering, and normalization, (iii)~feature extraction, and (iv)~classification using a Random Forest model (150 decision trees).
 
-Evaluated on synthetic data modeled after the WiAR benchmark (16 activity classes, 638 test windows), the Random Forest achieves near-perfect classification: accuracy $= 99.40\%$, precision $= 100\%$ (zero false positives), recall $= 98.05\%$, F1 $= 0.99$ on a held-out group-stratified test set, with inference time $<10$ms per window.
-We critically analyze these results, discussing the strong in-domain performance, generalization considerations, and paths to cross-environment validation.
-All code, trained models, and evaluation scripts are released as open-source software for reproducibility.
+We chose Random Forest over deep learning because our dataset is small (~2,000 samples), and our hand-crafted features already encode the physics of motion detection---deep learning would need far more data to learn these patterns from scratch.
+
+Testing on synthetic data based on the WiAR benchmark, we achieve 99.4\% accuracy with zero false positives.
+While this result is strong, we acknowledge it reflects controlled conditions; real-world deployment would require testing across different rooms and buildings.
+All code is available on GitHub for reproducibility.
 
 \vspace{4pt}
-\noindent\textbf{Keywords:} WiFi sensing, Channel State Information (CSI), OFDM, device-free presence detection, Fresnel zone, Random Forest, physics-informed features, WiAR dataset, multipath propagation, Doppler effect.
+\noindent\textbf{Keywords:} WiFi sensing, Channel State Information (CSI), presence detection, Random Forest, signal processing.
 \end{abstract}
 
 % ============================================================================
@@ -897,23 +900,23 @@ For real-world smart-home deployment, several factors must be addressed:
 
 \subsection{Summary}
 
-We presented \textbf{SpatiaLaw}, a WiFi-based human presence detection system that leverages Channel State Information (CSI) from commodity Intel~5300 NICs.
-Our key contributions are:
+We built \textbf{SpatiaLaw}, a proof-of-concept system for detecting human presence using WiFi signals.
+Our main contributions are:
 
 \begin{enumerate}[noitemsep]
-  \item A complete preprocessing pipeline (windowing, moving-average denoising, z-score normalization) that transforms raw CSI into analysis-ready segments.
+  \item A preprocessing pipeline that converts raw WiFi data into usable features (windowing, noise filtering, normalization).
 
-  \item A set of 14 physics-informed statistical features capturing variance, envelope dynamics, spectral entropy, velocity, MAD, and periodic motion patterns, grounded in Doppler and multipath physics.
+  \item 14 statistical features that capture how human motion affects WiFi signals (variance, velocity, entropy, etc.).
 
-  \item Rigorous justification of Random Forest over deep learning approaches based on dataset size, physics-grounded features, and reduced overfitting risk.
+  \item A clear explanation of why Random Forest works better than deep learning for this small dataset.
 
-  \item Critical analysis of the 99.40\% accuracy result, demonstrating strong in-domain performance while acknowledging cross-environment validation as the natural next step.
+  \item Honest analysis of our 99.4\% accuracy result---strong for controlled conditions, but needs real-world testing.
 \end{enumerate}
 
-Our Random Forest classifier achieves \textbf{99.40\% accuracy} (100\% precision, 98.05\% recall) on synthetic data modeled after the WiAR benchmark, demonstrating that WiFi-based presence detection is technically feasible with high reliability.
-The model supports real-time inference ($<10$ms per window) suitable for edge deployment.
+Our classifier achieves \textbf{99.4\% accuracy} with zero false positives on test data.
+The model runs fast enough for real-time use ($<10$ms per prediction).
 
-The primary limitation is that cross-environment generalization has not yet been validated---a standard next step for real-world deployment rather than a fundamental flaw.
+\textbf{Limitations:} We only tested in one environment with synthetic data. Before this could be deployed in real buildings, it would need testing across different rooms, buildings, and hardware setups.
 
 \subsection{Future Work}
 
@@ -1276,7 +1279,7 @@ Wiley, 1998.
 
 Table~\ref{tab:feature_summary} provides a compact reference for all 14 features.
 
-\begin{table}[h]
+\begin{table}[ht!]
 \centering
 \caption{Summary of extracted features.}
 \label{tab:feature_summary}
@@ -1304,10 +1307,11 @@ $f_{14}$ & \texttt{norm\_std\_std} & Std of normalized std \\
 \end{table}
 
 
+\clearpage
 \section{Hyperparameter Settings}
 \label{app:hyperparams}
 
-\begin{table}[h]
+\begin{table}[ht!]
 \centering
 \caption{Hyperparameter configurations.}
 \label{tab:hyperparams}
@@ -1325,6 +1329,7 @@ Random Forest & \texttt{n\_estimators} & 150 \\
 \end{table}
 
 
+\clearpage
 \section{Computational Complexity Analysis}
 \label{app:complexity}
 
@@ -1342,7 +1347,7 @@ Computing $\mu_s$ and $\sigma_s$ for each subcarrier requires $O(S \cdot T)$ ope
 
 \subsection{Feature Extraction Complexity}
 
-\begin{table}[h]
+\begin{table}[ht!]
 \centering
 \caption{Per-window feature extraction complexity.}
 \footnotesize
@@ -1431,7 +1436,10 @@ To verify stability, we performed 5-fold group-stratified cross-validation with 
 \end{algorithmic}
 \end{algorithm}
 
-\textbf{Results:}\n\begin{itemize}[noitemsep]\n  \item Random Forest: Accuracy = $0.91 \pm 0.02$, ROC-AUC = $0.95 \pm 0.02$\n\end{itemize}
+\textbf{Results:}
+\begin{itemize}[noitemsep]
+  \item Random Forest: Accuracy = $0.91 \pm 0.02$, ROC-AUC = $0.95 \pm 0.02$
+\end{itemize}
 
 The cross-validation results are consistent with the held-out test set, confirming generalization.
 
